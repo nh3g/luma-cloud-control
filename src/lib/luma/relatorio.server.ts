@@ -91,33 +91,44 @@ function orcamento(valor: unknown): number | null {
   return Number.isFinite(numero) ? numero : null;
 }
 
-/** Monta o relatório do período escolhido e o comparativo com o período imediatamente anterior. */
+/**
+ * Monta o relatório do período escolhido e o comparativo com o período
+ * imediatamente anterior. `dias === 0` significa "todo o período disponível":
+ * abrange todos os snapshots do workspace, sem janela anterior de comparação.
+ */
 export async function montarRelatorio(sb: Sb, ws: string, dias: number): Promise<Relatorio> {
   const fim = new Date();
-  const inicio = new Date(fim.getTime() - dias * 86400000);
-  const inicioAnterior = new Date(inicio.getTime() - dias * 86400000);
+  const tudo = dias === 0;
+  const inicio = tudo ? new Date("1970-01-01T00:00:00Z") : new Date(fim.getTime() - dias * 86400000);
+  const inicioAnterior = tudo ? fim : new Date(inicio.getTime() - dias * 86400000);
+
+  const snapsAtualQuery = sb
+    .from("metric_snapshots")
+    .select("captured_at, spend, revenue, conversions, clicks, impressions")
+    .eq("workspace_id", ws)
+    .gte("captured_at", inicio.toISOString())
+    .order("captured_at", { ascending: true });
+  const snapsAnteriorQuery = tudo
+    ? Promise.resolve({ data: [], error: null })
+    : sb
+        .from("metric_snapshots")
+        .select("spend, revenue, conversions, clicks, impressions")
+        .eq("workspace_id", ws)
+        .gte("captured_at", inicioAnterior.toISOString())
+        .lt("captured_at", inicio.toISOString());
+  const decisoesQuery = sb
+    .from("decisions")
+    .select(
+      "id, created_at, status, action_type, platform, campaign_name, reason, confidence, previous_value_json, proposed_value_json",
+    )
+    .eq("workspace_id", ws)
+    .gte("created_at", inicio.toISOString())
+    .order("created_at", { ascending: false });
 
   const [snapsAtual, snapsAnterior, decisoes] = await Promise.all([
-    sb
-      .from("metric_snapshots")
-      .select("captured_at, spend, revenue, conversions, clicks, impressions")
-      .eq("workspace_id", ws)
-      .gte("captured_at", inicio.toISOString())
-      .order("captured_at", { ascending: true }),
-    sb
-      .from("metric_snapshots")
-      .select("spend, revenue, conversions, clicks, impressions")
-      .eq("workspace_id", ws)
-      .gte("captured_at", inicioAnterior.toISOString())
-      .lt("captured_at", inicio.toISOString()),
-    sb
-      .from("decisions")
-      .select(
-        "id, created_at, status, action_type, platform, campaign_name, reason, confidence, previous_value_json, proposed_value_json",
-      )
-      .eq("workspace_id", ws)
-      .gte("created_at", inicio.toISOString())
-      .order("created_at", { ascending: false }),
+    snapsAtualQuery,
+    snapsAnteriorQuery,
+    decisoesQuery,
   ]);
 
   const mapa = new Map<string, LinhaDia>();

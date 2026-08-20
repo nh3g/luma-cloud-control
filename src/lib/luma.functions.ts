@@ -630,7 +630,7 @@ export const conversarEstrategista = createServerFn({ method: "POST" })
 export const obterRelatorio = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ dias: z.union([z.literal(7), z.literal(14), z.literal(30)]).default(7) }).parse(input ?? {}),
+    z.object({ dias: z.union([z.literal(7), z.literal(14), z.literal(30), z.literal(0)]).default(7) }).parse(input ?? {}),
   )
   .handler(async ({ context, data }) => {
     const { montarRelatorio } = await import("./luma/relatorio.server");
@@ -644,14 +644,15 @@ export const obterRelatorio = createServerFn({ method: "GET" })
 export const exportarRelatorioCsv = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ dias: z.union([z.literal(7), z.literal(14), z.literal(30)]).default(7) }).parse(input ?? {}),
+    z.object({ dias: z.union([z.literal(7), z.literal(14), z.literal(30), z.literal(0)]).default(7) }).parse(input ?? {}),
   )
   .handler(async ({ context, data }) => {
     const { montarRelatorio, gerarCsv } = await import("./luma/relatorio.server");
     const ws = await obterWorkspaceId(context.supabase);
     const relatorio = await montarRelatorio(context.supabase, ws, data.dias);
+    const sufixo = data.dias === 0 ? "todo-periodo" : `${data.dias}d`;
     return {
-      nome: `luma-relatorio-${data.dias}d-${new Date().toISOString().slice(0, 10)}.csv`,
+      nome: `luma-relatorio-${sufixo}-${new Date().toISOString().slice(0, 10)}.csv`,
       csv: gerarCsv(relatorio),
     };
   });
