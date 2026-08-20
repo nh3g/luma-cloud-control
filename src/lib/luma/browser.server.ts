@@ -107,13 +107,16 @@ function alvoConta(conta: string) {
     : "na conta de anúncios já ativa na sessão (não troque de conta)";
 }
 
+const ESPERA_LOGIN =
+  "Se a página pedir login/entrada, NÃO digite nada e NÃO recarregue a página: a pessoa vai entrar manualmente pela janela ao vivo. Apenas aguarde de forma passiva, verificando a cada poucos segundos, até o painel logado aparecer; então continue a tarefa.";
+
 function instrucao(plataforma: "META" | "GOOGLE_ADS", conta: string, dias: number) {
   const periodo = `últimos ${dias} dias`;
   if (plataforma === "META") {
     return [
-      "Você começa na página do Gerenciador de Anúncios da Meta (pt-br.facebook.com/business/tools/ads-manager).",
-      "A partir dela, clique no botão de acesso ao Gerenciador de Anúncios para abrir o painel.",
-      "Se aparecer tela de login, PARE e aguarde a pessoa entrar manualmente na sessão ao vivo; depois continue.",
+      ESPERA_LOGIN,
+      "Se a sessão já estiver logada no Gerenciador de Anúncios (adsmanager.facebook.com/adsmanager/manage/campaigns), siga a partir dessa tela mesmo, sem voltar para a página institucional.",
+      "Se você estiver na página institucional do Gerenciador de Anúncios, clique no botão de acesso ao Gerenciador para abrir o painel.",
       `Trabalhe ${alvoConta(conta)}.`,
       `Vá para a aba Campanhas e ajuste o período para os ${periodo}.`,
       "Garanta que as colunas mostrem: orçamento diário, valor gasto, impressões, cliques, resultados/conversões, valor de conversão de compras e frequência.",
@@ -124,8 +127,8 @@ function instrucao(plataforma: "META" | "GOOGLE_ADS", conta: string, dias: numbe
     ].join(" ");
   }
   return [
+    ESPERA_LOGIN,
     `Abra o Google Ads ${alvoConta(conta)}.`,
-    "Se aparecer tela de login, PARE e aguarde a pessoa entrar manualmente na sessão ao vivo; depois continue.",
     `Vá para Campanhas e ajuste o período para os ${periodo}.`,
     "Garanta que as colunas mostrem: orçamento, custo, impressões, cliques, conversões e valor de conversão.",
     "Leia TODAS as campanhas listadas (role a tabela até o fim).",
@@ -133,6 +136,7 @@ function instrucao(plataforma: "META" | "GOOGLE_ADS", conta: string, dias: numbe
     "Devolva os números em JSON: budget_daily, spend e revenue em reais (número puro); revenue é o valor de conversão; frequency sempre 0.",
   ].join(" ");
 }
+
 
 const URL_META = "https://pt-br.facebook.com/business/tools/ads-manager";
 
@@ -213,16 +217,14 @@ export async function iniciarLogin(entrada: {
       ? [
           `Você começa em ${URL_META}, a página do Gerenciador de Anúncios da Meta.`,
           "Clique no botão de acesso ao Gerenciador de Anúncios para abrir o painel.",
-          "Se aparecer tela de login, NÃO digite e-mail nem senha: a pessoa vai entrar manualmente pela janela ao vivo.",
-          "Apenas espere, recarregando de tempos em tempos, até o painel de campanhas aparecer logado.",
-          "Quando o painel logado carregar, finalize a tarefa respondendo apenas: LOGADO.",
+          ESPERA_LOGIN,
+          "Quando o painel de campanhas logado carregar, finalize a tarefa respondendo apenas: LOGADO.",
           "Não altere nenhuma configuração, campanha ou orçamento.",
         ]
       : [
           "Abra o Google Ads (ads.google.com) e verifique se a sessão já está logada.",
-          "Se aparecer tela de login, NÃO digite e-mail nem senha: a pessoa vai entrar manualmente pela janela ao vivo.",
-          "Apenas espere, recarregando de tempos em tempos, até a lista de campanhas aparecer logada.",
-          "Quando o painel logado carregar, finalize a tarefa respondendo apenas: LOGADO.",
+          ESPERA_LOGIN,
+          "Quando a lista de campanhas logada carregar, finalize a tarefa respondendo apenas: LOGADO.",
           "Não altere nenhuma configuração, campanha ou orçamento.",
         ]
   ).join(" ");
@@ -249,7 +251,8 @@ export async function iniciarColeta(entrada: {
     llm: entrada.modelo,
     startUrl: urlInicial(entrada.plataforma),
     profileId: entrada.perfilId,
-    maxSteps: 60,
+    maxSteps: 120,
+
     structuredOutput: JSON.stringify(esquemaSaida),
   });
 }
@@ -272,17 +275,33 @@ function numero(valor: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-function converter(saida: unknown, plataforma: string): CampanhaExterna[] {
-  let dados = saida;
-  if (typeof dados === "string") {
+/** Procura o array de campanhas em qualquer nível razoável da resposta. */
+function acharLista(valor: unknown, profundidade = 0): unknown[] | null {
+  if (valor == null || profundidade > 4) return null;
+  if (typeof valor === "string") {
+    const texto = valor.trim();
+    if (!texto.startsWith("{") && !texto.startsWith("[")) return null;
     try {
-      dados = JSON.parse(dados);
+      return acharLista(JSON.parse(texto), profundidade + 1);
     } catch {
-      return [];
+      return null;
     }
   }
-  const lista = (dados as { campaigns?: unknown[] } | null)?.campaigns;
+  if (Array.isArray(valor)) return valor;
+  if (typeof valor === "object") {
+    const objeto = valor as Record<string, unknown>;
+    for (const chave of ["campaigns", "campanhas", "data", "result", "output", "doneOutput"]) {
+      const achado = acharLista(objeto[chave], profundidade + 1);
+      if (achado) return achado;
+    }
+  }
+  return null;
+}
+
+function converter(saida: unknown, plataforma: string): CampanhaExterna[] {
+  const lista = acharLista(saida);
   if (!Array.isArray(lista)) return [];
+
   return lista.map((item, indice) => {
     const c = (item ?? {}) as Record<string, unknown>;
     const nome = String(c["name"] ?? `Campanha ${indice + 1}`);
@@ -321,12 +340,18 @@ export async function consultarColeta(chave: string, taskId: string, plataforma:
   const sessionId = tarefa?.sessionId ?? tarefa?.session?.id ?? null;
   let liveUrl = tarefa?.session?.liveUrl ?? tarefa?.liveUrl ?? null;
   if (!liveUrl && sessionId && status === "RUNNING") liveUrl = await obterSessao(chave, sessionId);
+  const campanhas =
+    status === "FINISHED" ? converter(tarefa?.output ?? tarefa?.doneOutput ?? null, plataforma) : [];
   return {
     status,
     passo: ultimo?.nextGoal ?? ultimo?.next_goal ?? null,
     liveUrl,
-    erro: tarefa?.error ?? null,
-    campanhas: status === "FINISHED" ? converter(tarefa?.output ?? tarefa?.doneOutput, plataforma) : [],
+    erro:
+      tarefa?.error ??
+      (status === "FINISHED" && campanhas.length === 0
+        ? "A sessão terminou sem devolver a tabela de campanhas. Verifique se o painel estava logado e tente de novo."
+        : null),
+    campanhas,
   };
 }
 

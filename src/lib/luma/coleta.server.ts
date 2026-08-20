@@ -18,7 +18,7 @@ import { gravarCampanhas } from "./sync.server";
 const MODELO_NAVEGADOR = () => process.env["BROWSER_USE_MODEL"] || "browser-use-2.0";
 
 /** Tempo máximo de cada tipo de sessão, em minutos. */
-const LIMITE_MIN = { LOGIN: 10, COLLECT: 15 } as const;
+const LIMITE_MIN = { LOGIN: 10, COLLECT: 25 } as const;
 
 
 export type Plataforma = "META" | "GOOGLE_ADS";
@@ -206,9 +206,9 @@ export async function desconectarConta(sb: Sb, ws: string, plataforma: Plataform
 /** Dispara uma coleta por navegador para a plataforma escolhida. */
 export async function dispararColeta(sb: Sb, ws: string, plataforma: Plataforma) {
   const { servico, config, perfilId } = await prepararSessao(sb, ws, plataforma);
-  if (!config.connected_at) {
-    throw new Error('Conecte a conta primeiro: clique em "Conectar conta" e faça o login na janela ao vivo.');
-  }
+  // O login acontece dentro da própria sessão: se a conta ainda não estiver
+  // logada, a pessoa entra pela janela ao vivo e o agente segue a leitura.
+
 
   const { taskId, sessionId, liveUrl } = await iniciarColeta({
     chave: servico.chave,
@@ -332,6 +332,14 @@ export async function acompanharColeta(sb: Sb, ws: string, runId: string) {
       total = await gravarCampanhas(sb, ws, run.platform, "navegador", estado.campanhas);
       atualizacao["campaigns"] = total;
       if (total === 0) atualizacao["error"] = "A coleta terminou sem campanhas legíveis. Confira a conta e o período.";
+      else {
+        // Leu os números: a sessão estava logada e o perfil ficou salvo.
+        await sb
+          .from("browser_collections")
+          .update({ connected_at: new Date().toISOString() })
+          .eq("workspace_id", ws)
+          .eq("platform", run.platform);
+      }
     } catch (erro) {
       atualizacao["status"] = "FAILED";
       atualizacao["error"] = erro instanceof Error ? erro.message : "Falha ao gravar as campanhas coletadas.";

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -26,6 +26,43 @@ import {
   salvarColetaNavegador,
 } from "@/lib/luma.functions";
 
+
+/**
+ * Janela ao vivo da sessão. Mantém o primeiro endereço recebido para a
+ * execução, para o iframe não reiniciar a cada consulta de andamento.
+ */
+const JanelaAoVivo = memo(function JanelaAoVivo({
+  runId,
+  url,
+  titulo,
+}: {
+  runId: string;
+  url: string | null;
+  titulo: string;
+}) {
+  const fixo = useRef<{ runId: string; url: string } | null>(null);
+  if (url && (!fixo.current || fixo.current.runId !== runId)) fixo.current = { runId, url };
+  const endereco = fixo.current?.runId === runId ? fixo.current.url : null;
+  if (!endereco) return <p className="text-muted-foreground">Preparando a janela ao vivo…</p>;
+  return (
+    <>
+      <iframe
+        title={`Sessão ao vivo ${titulo}`}
+        src={endereco}
+        className="h-[420px] w-full rounded-md border border-border bg-background"
+        allow="clipboard-read; clipboard-write"
+      />
+      <a
+        className="inline-flex items-center gap-1 text-primary underline"
+        href={endereco}
+        target="_blank"
+        rel="noreferrer"
+      >
+        Abrir em uma nova aba <ExternalLink className="h-3 w-3" />
+      </a>
+    </>
+  );
+});
 
 type Plataforma = "META" | "GOOGLE_ADS";
 
@@ -264,9 +301,7 @@ export function ColetaNavegador() {
                   ? "Cadastre a chave do serviço de navegador acima."
                   : atual.modo !== "BROWSER"
                     ? 'Escolha a origem "Navegador na nuvem" para usar este passo.'
-                    : !conectada
-                      ? 'Conecte a conta primeiro: clique em "Conectar conta" e faça o login na janela ao vivo.'
-                      : null;
+                    : null;
                 return (
                   <>
                     <p className="text-xs">
@@ -275,7 +310,10 @@ export function ColetaNavegador() {
                           <CheckCircle2 className="h-3.5 w-3.5" /> Conta conectada em {formatarDataHora(conectada)}
                         </span>
                       ) : (
-                        <span className="text-muted-foreground">Conta não conectada neste navegador.</span>
+                        <span className="text-muted-foreground">
+                          Conta ainda não conectada — no primeiro uso, faça o login na janela ao vivo que abrir; a
+                          coleta continua sozinha logo depois.
+                        </span>
                       )}
                     </p>
 
@@ -295,9 +333,17 @@ export function ColetaNavegador() {
                         </Button>
                       ) : (
                         <>
+                          <Button
+                            size="sm"
+                            onClick={() => mIniciar.mutate(p)}
+                            disabled={mIniciar.isPending || Boolean(motivo)}
+                          >
+                            <Play className="mr-2 h-4 w-4" /> Abrir navegador e coletar
+                          </Button>
                           {!conectada && (
                             <Button
                               size="sm"
+                              variant="outline"
                               onClick={() => {
                                 if (atual.modo !== "BROWSER") {
                                   toast.error('Escolha a origem "Navegador na nuvem" primeiro.');
@@ -307,16 +353,9 @@ export function ColetaNavegador() {
                               }}
                               disabled={mConectar.isPending || semChave}
                             >
-                              <LogIn className="mr-2 h-4 w-4" /> Conectar conta do {titulos[p]}
+                              <LogIn className="mr-2 h-4 w-4" /> Só conectar conta
                             </Button>
                           )}
-                          <Button
-                            size="sm"
-                            onClick={() => mIniciar.mutate(p)}
-                            disabled={mIniciar.isPending || Boolean(motivo)}
-                          >
-                            <Play className="mr-2 h-4 w-4" /> Coletar agora
-                          </Button>
                           {conectada && (
                             <Button
                               size="sm"
@@ -341,31 +380,13 @@ export function ColetaNavegador() {
                   <p className="font-medium">
                     {rodando.kind === "LOGIN"
                       ? "Sessão de login aberta — entre na sua conta na janela abaixo."
-                      : "Coleta em andamento…"}
+                      : "Sessão aberta — se aparecer tela de login, entre na janela abaixo; a leitura segue sozinha."}
                   </p>
                   {rodando.step && <p className="text-muted-foreground">Etapa: {rodando.step}</p>}
-                  {rodando.live_url ? (
-                    <>
-                      <iframe
-                        title={`Sessão ao vivo ${titulos[p]}`}
-                        src={rodando.live_url}
-                        className="h-[420px] w-full rounded-md border border-border bg-background"
-                        allow="clipboard-read; clipboard-write"
-                      />
-                      <a
-                        className="inline-flex items-center gap-1 text-primary underline"
-                        href={rodando.live_url}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Abrir em uma nova aba <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </>
-                  ) : (
-                    <p className="text-muted-foreground">Preparando a janela ao vivo…</p>
-                  )}
+                  <JanelaAoVivo runId={rodando.id} url={rodando.live_url} titulo={titulos[p]} />
                 </div>
               )}
+
 
             </article>
           );
