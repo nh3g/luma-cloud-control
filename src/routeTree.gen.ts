@@ -20,6 +20,7 @@ import { Route as AuthenticatedDiagnosticoRouteImport } from './routes/_authenti
 import { Route as AuthenticatedEstrategistaRouteImport } from './routes/_authenticated/estrategista'
 import { Route as AuthenticatedIntegracoesRouteImport } from './routes/_authenticated/integracoes'
 import { Route as AuthenticatedNotasRouteImport } from './routes/_authenticated/notas'
+import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
 import { Route as ApiPublicMcpRouteImport } from './routes/api/public/mcp'
 import { Route as ApiPublicCompanionRpcRouteImport } from './routes/api/public/companion/rpc'
 import { Route as ApiPublicCronExecutarRouteImport } from './routes/api/public/cron/executar'
@@ -84,6 +85,11 @@ const AuthenticatedNotasRoute = AuthenticatedNotasRouteImport.update({
   path: '/notas',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
+  id: '/relatorios',
+  path: '/relatorios',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiPublicMcpRoute = ApiPublicMcpRouteImport.update({
   id: '/api/public/mcp',
   path: '/api/public/mcp',
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/estrategista': typeof AuthenticatedEstrategistaRoute
   '/integracoes': typeof AuthenticatedIntegracoesRoute
   '/notas': typeof AuthenticatedNotasRoute
+  '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/api/public/mcp': typeof ApiPublicMcpRoute
   '/api/public/companion/rpc': typeof ApiPublicCompanionRpcRoute
   '/api/public/cron/executar': typeof ApiPublicCronExecutarRoute
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/estrategista': typeof AuthenticatedEstrategistaRoute
   '/integracoes': typeof AuthenticatedIntegracoesRoute
   '/notas': typeof AuthenticatedNotasRoute
+  '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/': typeof AuthenticatedIndexRoute
   '/api/public/mcp': typeof ApiPublicMcpRoute
   '/api/public/companion/rpc': typeof ApiPublicCompanionRpcRoute
@@ -149,6 +157,7 @@ export interface FileRoutesById {
   '/_authenticated/estrategista': typeof AuthenticatedEstrategistaRoute
   '/_authenticated/integracoes': typeof AuthenticatedIntegracoesRoute
   '/_authenticated/notas': typeof AuthenticatedNotasRoute
+  '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/api/public/mcp': typeof ApiPublicMcpRoute
   '/api/public/companion/rpc': typeof ApiPublicCompanionRpcRoute
@@ -168,6 +177,7 @@ export interface FileRouteTypes {
     | '/estrategista'
     | '/integracoes'
     | '/notas'
+    | '/relatorios'
     | '/api/public/mcp'
     | '/api/public/companion/rpc'
     | '/api/public/cron/executar'
@@ -183,6 +193,7 @@ export interface FileRouteTypes {
     | '/estrategista'
     | '/integracoes'
     | '/notas'
+    | '/relatorios'
     | '/'
     | '/api/public/mcp'
     | '/api/public/companion/rpc'
@@ -200,6 +211,7 @@ export interface FileRouteTypes {
     | '/_authenticated/estrategista'
     | '/_authenticated/integracoes'
     | '/_authenticated/notas'
+    | '/_authenticated/relatorios'
     | '/_authenticated/'
     | '/api/public/mcp'
     | '/api/public/companion/rpc'
@@ -295,6 +307,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNotasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/relatorios': {
+      id: '/_authenticated/relatorios'
+      path: '/relatorios'
+      fullPath: '/relatorios'
+      preLoaderRoute: typeof AuthenticatedRelatoriosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/mcp': {
       id: '/api/public/mcp'
       path: '/api/public/mcp'
@@ -335,6 +354,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEstrategistaRoute: typeof AuthenticatedEstrategistaRoute
   AuthenticatedIntegracoesRoute: typeof AuthenticatedIntegracoesRoute
   AuthenticatedNotasRoute: typeof AuthenticatedNotasRoute
+  AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
 
@@ -347,6 +367,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEstrategistaRoute: AuthenticatedEstrategistaRoute,
   AuthenticatedIntegracoesRoute: AuthenticatedIntegracoesRoute,
   AuthenticatedNotasRoute: AuthenticatedNotasRoute,
+  AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
 
