@@ -83,6 +83,9 @@ function Pagina() {
     void queryClient.invalidateQueries({ queryKey: ["integracoes"] });
     void queryClient.invalidateQueries({ queryKey: ["visao-geral"] });
     void queryClient.invalidateQueries({ queryKey: ["campanhas"] });
+    void queryClient.invalidateQueries({ queryKey: ["decisoes"] });
+    void queryClient.invalidateQueries({ queryKey: ["diagnostico"] });
+    void queryClient.invalidateQueries({ queryKey: ["notas"] });
   };
 
   const mSync = useMutation({
