@@ -75,10 +75,11 @@ function Pagina() {
   const { data: workspace } = useWorkspace();
   const [aba, setAba] = useState("PENDING");
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["decisoes"],
     queryFn: () => listarDecisoes(),
   });
+
 
   const decidir = useServerFn(decidirDecisao);
   const mutacao = useMutation({
