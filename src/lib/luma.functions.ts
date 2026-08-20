@@ -640,3 +640,93 @@ export const concluirOnboarding = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/* ── Coleta por navegador (browser-use na nuvem) ───────────────────────── */
+
+const plataformaColeta = z.enum(["META", "GOOGLE_ADS"]);
+
+export const obterColetaNavegador = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { listarColeta } = await import("./luma/coleta.server");
+    const ws = await obterWorkspaceId(context.supabase);
+    return listarColeta(context.supabase, ws);
+  });
+
+export const salvarColetaNavegador = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        plataforma: plataformaColeta,
+        modo: z.enum(["DEMO", "API", "BROWSER"]),
+        conta: z.string().trim().max(120).default(""),
+        dias: z.union([z.literal(7), z.literal(14), z.literal(30)]).default(7),
+      })
+      .parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const { salvarColeta } = await import("./luma/coleta.server");
+    const ws = await obterWorkspaceId(context.supabase);
+    return salvarColeta(context.supabase, ws, data);
+  });
+
+export const iniciarColetaNavegador = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ plataforma: plataformaColeta }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { dispararColeta } = await import("./luma/coleta.server");
+    const ws = await obterWorkspaceId(context.supabase);
+    return dispararColeta(context.supabase, ws, data.plataforma);
+  });
+
+export const acompanharColetaNavegador = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { acompanharColeta } = await import("./luma/coleta.server");
+    const ws = await obterWorkspaceId(context.supabase);
+    return acompanharColeta(context.supabase, ws, data.id);
+  });
+
+export const pararColetaNavegador = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { interromperColeta } = await import("./luma/coleta.server");
+    const ws = await obterWorkspaceId(context.supabase);
+    return interromperColeta(context.supabase, ws, data.id);
+  });
+
+/* ── Modelo de IA ──────────────────────────────────────────────────────── */
+
+export const obterConfigIa = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { chaveIaConfigurada, MODELOS_DISPONIVEIS, MODELO_PADRAO } = await import("./luma/ia.server");
+    const ws = await obterWorkspaceId(context.supabase);
+    const { data } = await context.supabase.from("workspaces").select("ai_model").eq("id", ws).maybeSingle();
+    return {
+      modelo: data?.ai_model ?? MODELO_PADRAO,
+      modelos: MODELOS_DISPONIVEIS.map((m) => ({ id: m.id, rotulo: m.rotulo })),
+      configurada: chaveIaConfigurada(),
+    };
+  });
+
+export const salvarModeloIa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ modelo: z.string().trim().min(2).max(60) }).parse(input))
+  .handler(async ({ context, data }) => {
+    const ws = await obterWorkspaceId(context.supabase);
+    const { error } = await context.supabase.from("workspaces").update({ ai_model: data.modelo }).eq("id", ws);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const testarModeloIa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ modelo: z.string().trim().min(2).max(60) }).parse(input))
+  .handler(async ({ data }) => {
+    const { testarIa } = await import("./luma/ia.server");
+    return testarIa(data.modelo);
+  });
