@@ -217,16 +217,14 @@ export async function iniciarLogin(entrada: {
       ? [
           `Você começa em ${URL_META}, a página do Gerenciador de Anúncios da Meta.`,
           "Clique no botão de acesso ao Gerenciador de Anúncios para abrir o painel.",
-          "Se aparecer tela de login, NÃO digite e-mail nem senha: a pessoa vai entrar manualmente pela janela ao vivo.",
-          "Apenas espere, recarregando de tempos em tempos, até o painel de campanhas aparecer logado.",
-          "Quando o painel logado carregar, finalize a tarefa respondendo apenas: LOGADO.",
+          ESPERA_LOGIN,
+          "Quando o painel de campanhas logado carregar, finalize a tarefa respondendo apenas: LOGADO.",
           "Não altere nenhuma configuração, campanha ou orçamento.",
         ]
       : [
           "Abra o Google Ads (ads.google.com) e verifique se a sessão já está logada.",
-          "Se aparecer tela de login, NÃO digite e-mail nem senha: a pessoa vai entrar manualmente pela janela ao vivo.",
-          "Apenas espere, recarregando de tempos em tempos, até a lista de campanhas aparecer logada.",
-          "Quando o painel logado carregar, finalize a tarefa respondendo apenas: LOGADO.",
+          ESPERA_LOGIN,
+          "Quando a lista de campanhas logada carregar, finalize a tarefa respondendo apenas: LOGADO.",
           "Não altere nenhuma configuração, campanha ou orçamento.",
         ]
   ).join(" ");
@@ -253,7 +251,8 @@ export async function iniciarColeta(entrada: {
     llm: entrada.modelo,
     startUrl: urlInicial(entrada.plataforma),
     profileId: entrada.perfilId,
-    maxSteps: 60,
+    maxSteps: 120,
+
     structuredOutput: JSON.stringify(esquemaSaida),
   });
 }
