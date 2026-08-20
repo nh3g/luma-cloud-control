@@ -277,68 +277,127 @@ export const decidirDecisao = createServerFn({ method: "POST" })
 export const rodarAnalise = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { avaliarCampanhas } = await import("./luma/motor");
-    const { expirarDecisoesVencidas } = await import("./luma.server");
+    const { analisarWorkspace } = await import("./luma/analise.server");
     const ws = await obterWorkspaceId(context.supabase);
+    return analisarWorkspace(context.supabase, ws);
+  });
 
-    const { data: workspace } = await context.supabase
-      .from("workspaces")
-      .select("agent_stopped")
-      .eq("id", ws)
-      .maybeSingle();
-    if (workspace?.agent_stopped) {
-      throw new Error("O agente está parado. Reative o agente para rodar a análise.");
-    }
-
-    const expiradas = await expirarDecisoesVencidas(context.supabase, ws);
-
-    const [{ data: settings }, { data: campanhas }, { data: pendentes }] = await Promise.all([
-      context.supabase.from("engine_settings").select("*").eq("workspace_id", ws).maybeSingle(),
-      context.supabase.from("campaigns").select("*").eq("workspace_id", ws),
+export const listarIntegracoes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const ws = await obterWorkspaceId(context.supabase);
+    const [integracoes, syncs, workspace, campanhas] = await Promise.all([
+      context.supabase.from("integrations").select("*").eq("workspace_id", ws).order("platform"),
       context.supabase
-        .from("decisions")
-        .select("campaign_id, action_type")
+        .from("sync_runs")
+        .select("*")
         .eq("workspace_id", ws)
-        .in("status", ["PENDING", "APPROVED"]),
+        .order("started_at", { ascending: false })
+        .limit(10),
+      context.supabase
+        .from("workspaces")
+        .select("demo_mode, auto_sync_enabled, agent_stopped, last_auto_run_at")
+        .eq("id", ws)
+        .maybeSingle(),
+      context.supabase.from("campaigns").select("platform").eq("workspace_id", ws),
     ]);
-
-    if (!settings) throw new Error("Parâmetros do motor não encontrados.");
-
-    const propostas = avaliarCampanhas(campanhas ?? [], settings);
-    const jaExiste = new Set((pendentes ?? []).map((d) => `${d.campaign_id}|${d.action_type}`));
-    const novas = propostas.filter((p) => !jaExiste.has(`${p.campaign_id}|${p.action_type}`));
-    const ignoradas = propostas.length - novas.length;
-
-    if (novas.length > 0) {
-      const expires = new Date(Date.now() + settings.decision_ttl_minutes * 60000).toISOString();
-      const { error } = await context.supabase.from("decisions").insert(
-        novas.map((p) => ({
-          workspace_id: ws,
-          platform: p.platform as "META" | "GOOGLE_ADS" | "GA4",
-          account_id: p.account_id,
-          campaign_id: p.campaign_id,
-          campaign_name: p.campaign_name,
-          action_type: p.action_type,
-          reason: p.reason,
-          previous_value_json: p.previous_value_json as Json,
-          proposed_value_json: p.proposed_value_json as Json,
-          confidence: p.confidence,
-          risk_level: p.risk_level,
-          status: "PENDING" as const,
-          source: "RULE_ENGINE" as const,
-          expires_at: expires,
-        })),
-      );
-      if (error) throw new Error(error.message);
-    }
-
+    const contagem: Record<string, number> = {};
+    for (const c of campanhas.data ?? []) contagem[c.platform] = (contagem[c.platform] ?? 0) + 1;
     return {
-      analisadas: (campanhas ?? []).length,
-      criadas: novas.length,
-      ignoradas,
-      expiradas,
+      integracoes: integracoes.data ?? [],
+      syncs: syncs.data ?? [],
+      workspace: workspace.data,
+      contagemCampanhas: contagem,
+      credenciais: {
+        META: Boolean(process.env["META_APP_ID"] && process.env["META_APP_SECRET"]),
+        GOOGLE_ADS: Boolean(
+          process.env["GOOGLE_ADS_CLIENT_ID"] &&
+            process.env["GOOGLE_ADS_CLIENT_SECRET"] &&
+            process.env["GOOGLE_ADS_DEVELOPER_TOKEN"],
+        ),
+      },
     };
   });
+
+export const sincronizarAgora = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { sincronizarWorkspace } = await import("./luma/sync.server");
+    const ws = await obterWorkspaceId(context.supabase);
+    return { resumos: await sincronizarWorkspace(context.supabase, ws) };
+  });
+
+export const alternarPreferenciaWorkspace = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({ campo: z.enum(["demo_mode", "auto_sync_enabled"]), valor: z.boolean() }).parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const ws = await obterWorkspaceId(context.supabase);
+    if (data.campo === "demo_mode" && data.valor === false) {
+      const { count } = await context.supabase
+        .from("integrations")
+        .select("id", { count: "exact", head: true })
+        .eq("workspace_id", ws)
+        .eq("status", "CONNECTED");
+      if (!count) {
+        throw new Error("Conecte uma conta real antes de sair do modo demonstração.");
+      }
+    }
+    const { error } = await context.supabase
+      .from("workspaces")
+      .update(data.campo === "demo_mode" ? { demo_mode: data.valor } : { auto_sync_enabled: data.valor })
+      .eq("id", ws);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const desconectarIntegracao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ context, data }) => {
+    const ws = await obterWorkspaceId(context.supabase);
+    const { error } = await context.supabase
+      .from("integrations")
+      .update({ status: "DISCONNECTED", access_token_vault_id: null, refresh_token_vault_id: null })
+      .eq("id", data.id)
+      .eq("workspace_id", ws);
+    if (error) throw new Error(error.message);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("integration_tokens").delete().eq("integration_id", data.id);
+    return { ok: true };
+  });
+
+export const iniciarConexao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ plataforma: z.enum(["META", "GOOGLE_ADS"]) }).parse(input))
+  .handler(async ({ context, data }) => {
+    const ws = await obterWorkspaceId(context.supabase);
+    const origem = process.env["PUBLIC_APP_URL"] ?? "";
+    const clientId =
+      data.plataforma === "META" ? process.env["META_APP_ID"] : process.env["GOOGLE_ADS_CLIENT_ID"];
+    if (!clientId) {
+      throw new Error(
+        data.plataforma === "META"
+          ? "Credenciais do app Meta não configuradas. Adicione META_APP_ID e META_APP_SECRET nas chaves do projeto."
+          : "Credenciais do Google Ads não configuradas. Adicione GOOGLE_ADS_CLIENT_ID, GOOGLE_ADS_CLIENT_SECRET e GOOGLE_ADS_DEVELOPER_TOKEN nas chaves do projeto.",
+      );
+    }
+
+    const state = crypto.randomUUID();
+    const { error } = await context.supabase
+      .from("oauth_states")
+      .insert({ state, workspace_id: ws, platform: data.plataforma });
+    if (error) throw new Error(error.message);
+
+    const redirect = `${origem}/api/public/oauth/callback`;
+    const url =
+      data.plataforma === "META"
+        ? `https://www.facebook.com/v20.0/dialog/oauth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirect)}&state=${state}&scope=ads_read,ads_management`
+        : `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirect)}&response_type=code&access_type=offline&prompt=consent&state=${state}&scope=${encodeURIComponent("https://www.googleapis.com/auth/adwords")}`;
+    return { url };
+  });
+
 
 export const executarDecisao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
