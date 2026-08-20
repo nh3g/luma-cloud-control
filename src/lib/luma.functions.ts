@@ -787,3 +787,72 @@ export const limparDadosWorkspace = createServerFn({ method: "POST" })
     const ws = await obterWorkspaceId(context.supabase);
     return limparDados(context.supabase, ws, data);
   });
+
+/* ── Importação de relatórios exportados (sem custo de navegador) ──────── */
+
+const campanhaImportada = z.object({
+  id: z.string(),
+  name: z.string(),
+  status: z.string(),
+  objective: z.string().nullable(),
+  budget_daily: z.number(),
+  spend: z.number(),
+  revenue: z.number(),
+  impressions: z.number(),
+  clicks: z.number(),
+  conversions: z.number(),
+  frequency: z.number(),
+});
+
+export const analisarImportacao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        plataforma: z.enum(["META", "GOOGLE_ADS"]),
+        conteudo: z.string().min(20).max(200_000),
+        dias: z.union([z.literal(7), z.literal(14), z.literal(30)]).default(7),
+      })
+      .parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const { analisarRelatorio } = await import("./luma/importacao.server");
+    const ws = await obterWorkspaceId(context.supabase);
+    const { data: workspace } = await context.supabase
+      .from("workspaces")
+      .select("ai_model")
+      .eq("id", ws)
+      .maybeSingle();
+    return analisarRelatorio({
+      plataforma: data.plataforma,
+      conteudo: data.conteudo,
+      dias: data.dias,
+      modelo: workspace?.ai_model,
+    });
+  });
+
+export const confirmarImportacao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        plataforma: z.enum(["META", "GOOGLE_ADS"]),
+        dias: z.union([z.literal(7), z.literal(14), z.literal(30)]).default(7),
+        campanhas: z.array(campanhaImportada).min(1).max(500),
+        rotulo: z.string().max(120).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const { confirmarRelatorio } = await import("./luma/importacao.server");
+    const ws = await obterWorkspaceId(context.supabase);
+    return confirmarRelatorio(context.supabase, ws, data);
+  });
+
+export const listarImportacoesRelatorio = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { listarImportacoes } = await import("./luma/importacao.server");
+    const ws = await obterWorkspaceId(context.supabase);
+    return listarImportacoes(context.supabase, ws);
+  });
