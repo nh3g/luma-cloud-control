@@ -33,6 +33,7 @@ const NAV = [
   { to: "/", label: "Visão Geral", icon: LayoutDashboard },
   { to: "/campanhas", label: "Campanhas", icon: Megaphone },
   { to: "/decisoes", label: "Decisões", icon: ClipboardCheck },
+  { to: "/relatorios", label: "Relatórios", icon: BarChart3 },
   { to: "/estrategista", label: "Estrategista", icon: Brain },
   { to: "/agente-navegador", label: "Agente de Navegador", icon: Bot },
   { to: "/integracoes", label: "Integrações", icon: Plug },
@@ -42,16 +43,18 @@ const NAV = [
 ] as const;
 
 /** Dados de cada página, para adiantar a busca assim que o mouse encosta no menu. */
-const PRE_CARGA: Record<string, { chave: string; buscar: () => Promise<unknown> }> = {
-  "/": { chave: "visao-geral", buscar: () => obterVisaoGeral() },
-  "/campanhas": { chave: "campanhas", buscar: () => listarCampanhas() },
-  "/decisoes": { chave: "decisoes", buscar: () => listarDecisoes() },
-  "/agente-navegador": { chave: "agente", buscar: () => listarAgente() },
-  "/integracoes": { chave: "integracoes", buscar: () => listarIntegracoes() },
-  "/notas": { chave: "notas", buscar: () => listarNotas() },
-  "/configuracoes": { chave: "configuracoes", buscar: () => obterConfiguracoes() },
-  "/diagnostico": { chave: "diagnostico", buscar: () => obterDiagnostico() },
+const PRE_CARGA: Record<string, { chave: unknown[]; buscar: () => Promise<unknown> }> = {
+  "/": { chave: ["visao-geral"], buscar: () => obterVisaoGeral() },
+  "/campanhas": { chave: ["campanhas"], buscar: () => listarCampanhas() },
+  "/decisoes": { chave: ["decisoes"], buscar: () => listarDecisoes() },
+  "/relatorios": { chave: ["relatorio", 7], buscar: () => obterRelatorio({ data: { dias: 7 } }) },
+  "/agente-navegador": { chave: ["agente"], buscar: () => listarAgente() },
+  "/integracoes": { chave: ["integracoes"], buscar: () => listarIntegracoes() },
+  "/notas": { chave: ["notas"], buscar: () => listarNotas() },
+  "/configuracoes": { chave: ["configuracoes"], buscar: () => obterConfiguracoes() },
+  "/diagnostico": { chave: ["diagnostico"], buscar: () => obterDiagnostico() },
 };
+
 
 export function AppLayout() {
   const queryClient = useQueryClient();
