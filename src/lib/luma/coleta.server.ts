@@ -206,9 +206,9 @@ export async function desconectarConta(sb: Sb, ws: string, plataforma: Plataform
 /** Dispara uma coleta por navegador para a plataforma escolhida. */
 export async function dispararColeta(sb: Sb, ws: string, plataforma: Plataforma) {
   const { servico, config, perfilId } = await prepararSessao(sb, ws, plataforma);
-  if (!config.connected_at) {
-    throw new Error('Conecte a conta primeiro: clique em "Conectar conta" e faça o login na janela ao vivo.');
-  }
+  // O login acontece dentro da própria sessão: se a conta ainda não estiver
+  // logada, a pessoa entra pela janela ao vivo e o agente segue a leitura.
+
 
   const { taskId, sessionId, liveUrl } = await iniciarColeta({
     chave: servico.chave,
