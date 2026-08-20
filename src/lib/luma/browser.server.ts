@@ -247,7 +247,7 @@ export async function iniciarColeta(entrada: {
   return criarTarefa(entrada.chave, {
     task: instrucao(entrada.plataforma, entrada.conta, entrada.dias),
     llm: entrada.modelo,
-    startUrl: urlInicial(entrada.plataforma, entrada.conta),
+    startUrl: urlInicial(entrada.plataforma),
     profileId: entrada.perfilId,
     maxSteps: 60,
     structuredOutput: JSON.stringify(esquemaSaida),
