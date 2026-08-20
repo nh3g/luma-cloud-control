@@ -294,14 +294,15 @@ function converter(saida: unknown, plataforma: string): CampanhaExterna[] {
   });
 }
 
-/** Consulta o andamento de uma coleta em curso. */
+/** Consulta o andamento de uma tarefa (login ou coleta). */
 export async function consultarColeta(chave: string, taskId: string, plataforma: string): Promise<EstadoTarefa> {
   const tarefa = await pedir<{
     status?: string;
     output?: unknown;
     doneOutput?: unknown;
     steps?: { nextGoal?: string; next_goal?: string }[];
-    session?: { liveUrl?: string };
+    sessionId?: string;
+    session?: { id?: string; liveUrl?: string };
     liveUrl?: string;
     error?: string;
   }>(chave, `/tasks/${encodeURIComponent(taskId)}`);
@@ -309,14 +310,18 @@ export async function consultarColeta(chave: string, taskId: string, plataforma:
   const status = normalizarStatus(tarefa?.status);
   const passos = tarefa?.steps ?? [];
   const ultimo = passos[passos.length - 1];
+  const sessionId = tarefa?.sessionId ?? tarefa?.session?.id ?? null;
+  let liveUrl = tarefa?.session?.liveUrl ?? tarefa?.liveUrl ?? null;
+  if (!liveUrl && sessionId && status === "RUNNING") liveUrl = await obterSessao(chave, sessionId);
   return {
     status,
     passo: ultimo?.nextGoal ?? ultimo?.next_goal ?? null,
-    liveUrl: tarefa?.session?.liveUrl ?? tarefa?.liveUrl ?? null,
+    liveUrl,
     erro: tarefa?.error ?? null,
     campanhas: status === "FINISHED" ? converter(tarefa?.output ?? tarefa?.doneOutput, plataforma) : [],
   };
 }
+
 
 /** Interrompe uma coleta em andamento. */
 export async function pararColeta(chave: string, taskId: string): Promise<void> {
