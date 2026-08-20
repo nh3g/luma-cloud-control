@@ -42,57 +42,17 @@ function instrucoes(modo: ModoEstrategista, demo: boolean, parado: boolean) {
   return base.join("\n");
 }
 
-type RespostaGateway = {
-  choices?: { message: MensagemChat }[];
-  error?: { message?: string };
-  message?: string;
-};
-
-async function chamarGateway(mensagens: MensagemChat[], modo: ModoEstrategista) {
-  const chave = process.env["LOVABLE_API_KEY"];
-  if (!chave) throw new Error("A IA não está configurada neste projeto (chave ausente).");
-
-  const resposta = await fetch(GATEWAY, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${chave}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: MODELO_PADRAO,
-      messages: mensagens,
-      tools: ferramentas
-        .filter((f) => PERMITIDAS.has(f.name))
-        .map((f) => ({
-          type: "function",
-          function: { name: f.name, description: f.description, parameters: f.inputSchema },
-        })),
-      ...(modo === "PRIME" ? {} : { max_tokens: 1200 }),
-    }),
+async function chamarModelo(mensagens: MensagemChat[], modo: ModoEstrategista, modelo: string) {
+  return chamarIa(mensagens, {
+    modelo: modelo || MODELO_PADRAO,
+    ferramentas: ferramentas
+      .filter((f) => PERMITIDAS.has(f.name))
+      .map((f) => ({
+        type: "function" as const,
+        function: { name: f.name, description: f.description, parameters: f.inputSchema },
+      })),
+    ...(modo === "PRIME" ? {} : { maxTokens: 1200 }),
   });
-
-  if (!resposta.ok) {
-    const corpo = await resposta.text();
-    let mensagem = corpo;
-    try {
-      const json = JSON.parse(corpo) as RespostaGateway;
-      mensagem = json.error?.message ?? json.message ?? corpo;
-    } catch {
-      /* corpo não-JSON: mantém o texto cru */
-    }
-    if (resposta.status === 429) {
-      throw new Error("A IA está recebendo muitos pedidos agora. Tente de novo em alguns instantes.");
-    }
-    if (resposta.status === 402) {
-      throw new Error(`Créditos de IA insuficientes: ${mensagem}`);
-    }
-    if (resposta.status === 403) {
-      throw new Error(`A IA está bloqueada para este projeto: ${mensagem}`);
-    }
-    throw new Error(`Falha na IA (${resposta.status}): ${mensagem}`);
-  }
-
-  const json = (await resposta.json()) as RespostaGateway;
-  const mensagem = json.choices?.[0]?.message;
-  if (!mensagem) throw new Error("A IA não devolveu resposta.");
-  return mensagem;
 }
 
 export type ResultadoEstrategista = {
