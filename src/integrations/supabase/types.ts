@@ -14,6 +14,770 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_logs: {
+        Row: {
+          decision_id: string | null
+          endpoint: string
+          error_message: string | null
+          executed_at: string
+          id: string
+          method: string
+          platform: Database["public"]["Enums"]["platform"]
+          request_json: Json | null
+          response_json: Json | null
+          success: boolean
+          workspace_id: string
+        }
+        Insert: {
+          decision_id?: string | null
+          endpoint: string
+          error_message?: string | null
+          executed_at?: string
+          id?: string
+          method: string
+          platform: Database["public"]["Enums"]["platform"]
+          request_json?: Json | null
+          response_json?: Json | null
+          success: boolean
+          workspace_id: string
+        }
+        Update: {
+          decision_id?: string | null
+          endpoint?: string
+          error_message?: string | null
+          executed_at?: string
+          id?: string
+          method?: string
+          platform?: Database["public"]["Enums"]["platform"]
+          request_json?: Json | null
+          response_json?: Json | null
+          success?: boolean
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_logs_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_logs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      app_credentials: {
+        Row: {
+          key: string
+          updated_at: string
+          vault_secret_id: string
+          workspace_id: string
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          vault_secret_id: string
+          workspace_id: string
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          vault_secret_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_credentials_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      browser_agent_approvals: {
+        Row: {
+          action_type: string
+          current_value: string | null
+          id: string
+          proposed_value: string | null
+          reason: string
+          requested_at: string
+          responded_at: string | null
+          response_note: string | null
+          risk_level: Database["public"]["Enums"]["risk_level"]
+          run_id: string
+          status: Database["public"]["Enums"]["browser_approval_status"]
+          target: string | null
+          title: string
+        }
+        Insert: {
+          action_type: string
+          current_value?: string | null
+          id?: string
+          proposed_value?: string | null
+          reason: string
+          requested_at?: string
+          responded_at?: string | null
+          response_note?: string | null
+          risk_level?: Database["public"]["Enums"]["risk_level"]
+          run_id: string
+          status?: Database["public"]["Enums"]["browser_approval_status"]
+          target?: string | null
+          title: string
+        }
+        Update: {
+          action_type?: string
+          current_value?: string | null
+          id?: string
+          proposed_value?: string | null
+          reason?: string
+          requested_at?: string
+          responded_at?: string | null
+          response_note?: string | null
+          risk_level?: Database["public"]["Enums"]["risk_level"]
+          run_id?: string
+          status?: Database["public"]["Enums"]["browser_approval_status"]
+          target?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "browser_agent_approvals_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "browser_agent_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      browser_agent_logs: {
+        Row: {
+          created_at: string
+          id: string
+          level: string
+          message: string
+          run_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level?: string
+          message: string
+          run_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: string
+          message?: string
+          run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "browser_agent_logs_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "browser_agent_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      browser_agent_runs: {
+        Row: {
+          companion_id: string | null
+          created_at: string
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          intent: Json | null
+          mode: Database["public"]["Enums"]["browser_agent_mode"]
+          model: string
+          result_text: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["browser_agent_run_status"]
+          task: string
+          workspace_id: string
+        }
+        Insert: {
+          companion_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          intent?: Json | null
+          mode?: Database["public"]["Enums"]["browser_agent_mode"]
+          model?: string
+          result_text?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["browser_agent_run_status"]
+          task: string
+          workspace_id: string
+        }
+        Update: {
+          companion_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          intent?: Json | null
+          mode?: Database["public"]["Enums"]["browser_agent_mode"]
+          model?: string
+          result_text?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["browser_agent_run_status"]
+          task?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "browser_agent_runs_companion_id_fkey"
+            columns: ["companion_id"]
+            isOneToOne: false
+            referencedRelation: "companion_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "browser_agent_runs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          account_id: string
+          budget_daily: number
+          clicks: number
+          conversions: number
+          cpa: number
+          cpc: number
+          cpm: number
+          ctr: number
+          frequency: number
+          id: string
+          impressions: number
+          metadata_json: Json
+          name: string
+          objective: string | null
+          platform: Database["public"]["Enums"]["platform"]
+          revenue: number
+          roas: number
+          spend: number
+          status: string
+          synced_at: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          account_id: string
+          budget_daily?: number
+          clicks?: number
+          conversions?: number
+          cpa?: number
+          cpc?: number
+          cpm?: number
+          ctr?: number
+          frequency?: number
+          id: string
+          impressions?: number
+          metadata_json?: Json
+          name: string
+          objective?: string | null
+          platform: Database["public"]["Enums"]["platform"]
+          revenue?: number
+          roas?: number
+          spend?: number
+          status: string
+          synced_at?: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          account_id?: string
+          budget_daily?: number
+          clicks?: number
+          conversions?: number
+          cpa?: number
+          cpc?: number
+          cpm?: number
+          ctr?: number
+          frequency?: number
+          id?: string
+          impressions?: number
+          metadata_json?: Json
+          name?: string
+          objective?: string | null
+          platform?: Database["public"]["Enums"]["platform"]
+          revenue?: number
+          roas?: number
+          spend?: number
+          status?: string
+          synced_at?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companion_devices: {
+        Row: {
+          app_version: string | null
+          browser_label: string | null
+          created_at: string
+          device_token_hash: string | null
+          id: string
+          last_heartbeat_at: string | null
+          name: string
+          paired_at: string | null
+          pairing_code_hash: string | null
+          status: Database["public"]["Enums"]["companion_status"]
+          workspace_id: string
+        }
+        Insert: {
+          app_version?: string | null
+          browser_label?: string | null
+          created_at?: string
+          device_token_hash?: string | null
+          id?: string
+          last_heartbeat_at?: string | null
+          name: string
+          paired_at?: string | null
+          pairing_code_hash?: string | null
+          status?: Database["public"]["Enums"]["companion_status"]
+          workspace_id: string
+        }
+        Update: {
+          app_version?: string | null
+          browser_label?: string | null
+          created_at?: string
+          device_token_hash?: string | null
+          id?: string
+          last_heartbeat_at?: string | null
+          name?: string
+          paired_at?: string | null
+          pairing_code_hash?: string | null
+          status?: Database["public"]["Enums"]["companion_status"]
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "companion_devices_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decisions: {
+        Row: {
+          account_id: string
+          action_type: Database["public"]["Enums"]["decision_action_type"]
+          approval_note: string | null
+          approved_at: string | null
+          approved_by_user_id: string | null
+          campaign_id: string | null
+          campaign_name: string | null
+          confidence: number
+          created_at: string
+          executed_at: string | null
+          executed_via: Database["public"]["Enums"]["execution_channel"] | null
+          expires_at: string
+          id: string
+          platform: Database["public"]["Enums"]["platform"]
+          previous_value_json: Json | null
+          proposed_value_json: Json | null
+          reason: string
+          rejected_at: string | null
+          result_json: Json | null
+          risk_level: Database["public"]["Enums"]["risk_level"]
+          source: Database["public"]["Enums"]["decision_source"]
+          status: Database["public"]["Enums"]["decision_status"]
+          workspace_id: string
+        }
+        Insert: {
+          account_id: string
+          action_type: Database["public"]["Enums"]["decision_action_type"]
+          approval_note?: string | null
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          confidence?: number
+          created_at?: string
+          executed_at?: string | null
+          executed_via?: Database["public"]["Enums"]["execution_channel"] | null
+          expires_at: string
+          id?: string
+          platform: Database["public"]["Enums"]["platform"]
+          previous_value_json?: Json | null
+          proposed_value_json?: Json | null
+          reason: string
+          rejected_at?: string | null
+          result_json?: Json | null
+          risk_level?: Database["public"]["Enums"]["risk_level"]
+          source?: Database["public"]["Enums"]["decision_source"]
+          status?: Database["public"]["Enums"]["decision_status"]
+          workspace_id: string
+        }
+        Update: {
+          account_id?: string
+          action_type?: Database["public"]["Enums"]["decision_action_type"]
+          approval_note?: string | null
+          approved_at?: string | null
+          approved_by_user_id?: string | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          confidence?: number
+          created_at?: string
+          executed_at?: string | null
+          executed_via?: Database["public"]["Enums"]["execution_channel"] | null
+          expires_at?: string
+          id?: string
+          platform?: Database["public"]["Enums"]["platform"]
+          previous_value_json?: Json | null
+          proposed_value_json?: Json | null
+          reason?: string
+          rejected_at?: string | null
+          result_json?: Json | null
+          risk_level?: Database["public"]["Enums"]["risk_level"]
+          source?: Database["public"]["Enums"]["decision_source"]
+          status?: Database["public"]["Enums"]["decision_status"]
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decisions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decisions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      engine_settings: {
+        Row: {
+          analysis_interval_minutes: number
+          auto_analysis_enabled: boolean
+          budget_reduce_percent: number
+          budget_scale_percent: number
+          created_at: string
+          decision_ttl_minutes: number
+          high_frequency_threshold: number
+          id: string
+          low_ctr_threshold: number
+          min_spend_no_conversion: number
+          roas_reduce_threshold: number
+          roas_scale_threshold: number
+          target_cpa: number
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          analysis_interval_minutes?: number
+          auto_analysis_enabled?: boolean
+          budget_reduce_percent?: number
+          budget_scale_percent?: number
+          created_at?: string
+          decision_ttl_minutes?: number
+          high_frequency_threshold?: number
+          id?: string
+          low_ctr_threshold?: number
+          min_spend_no_conversion?: number
+          roas_reduce_threshold?: number
+          roas_scale_threshold?: number
+          target_cpa?: number
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          analysis_interval_minutes?: number
+          auto_analysis_enabled?: boolean
+          budget_reduce_percent?: number
+          budget_scale_percent?: number
+          created_at?: string
+          decision_ttl_minutes?: number
+          high_frequency_threshold?: number
+          id?: string
+          low_ctr_threshold?: number
+          min_spend_no_conversion?: number
+          roas_reduce_threshold?: number
+          roas_scale_threshold?: number
+          target_cpa?: number
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "engine_settings_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integrations: {
+        Row: {
+          access_token_vault_id: string | null
+          account_id: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          metadata_json: Json
+          name: string | null
+          platform: Database["public"]["Enums"]["platform"]
+          refresh_token_vault_id: string | null
+          status: Database["public"]["Enums"]["integration_status"]
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          access_token_vault_id?: string | null
+          account_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          metadata_json?: Json
+          name?: string | null
+          platform: Database["public"]["Enums"]["platform"]
+          refresh_token_vault_id?: string | null
+          status?: Database["public"]["Enums"]["integration_status"]
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          access_token_vault_id?: string | null
+          account_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          metadata_json?: Json
+          name?: string | null
+          platform?: Database["public"]["Enums"]["platform"]
+          refresh_token_vault_id?: string | null
+          status?: Database["public"]["Enums"]["integration_status"]
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integrations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      metric_snapshots: {
+        Row: {
+          campaign_id: string
+          captured_at: string
+          clicks: number
+          conversions: number
+          cpa: number
+          cpc: number
+          cpm: number
+          ctr: number
+          frequency: number
+          id: string
+          impressions: number
+          platform: Database["public"]["Enums"]["platform"]
+          revenue: number
+          roas: number
+          spend: number
+          workspace_id: string
+        }
+        Insert: {
+          campaign_id: string
+          captured_at?: string
+          clicks?: number
+          conversions?: number
+          cpa?: number
+          cpc?: number
+          cpm?: number
+          ctr?: number
+          frequency?: number
+          id?: string
+          impressions?: number
+          platform: Database["public"]["Enums"]["platform"]
+          revenue?: number
+          roas?: number
+          spend?: number
+          workspace_id: string
+        }
+        Update: {
+          campaign_id?: string
+          captured_at?: string
+          clicks?: number
+          conversions?: number
+          cpa?: number
+          cpc?: number
+          cpm?: number
+          ctr?: number
+          frequency?: number
+          id?: string
+          impressions?: number
+          platform?: Database["public"]["Enums"]["platform"]
+          revenue?: number
+          roas?: number
+          spend?: number
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metric_snapshots_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metric_snapshots_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notes: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          position: number
+          title: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          position?: number
+          title: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          position?: number
+          title?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      oauth_states: {
+        Row: {
+          created_at: string
+          platform: Database["public"]["Enums"]["platform"]
+          state: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          platform: Database["public"]["Enums"]["platform"]
+          state: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          platform?: Database["public"]["Enums"]["platform"]
+          state?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "oauth_states_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_runs: {
+        Row: {
+          accounts: number
+          campaigns: number
+          failed_accounts: number
+          finished_at: string | null
+          id: string
+          message: string | null
+          platform: Database["public"]["Enums"]["platform"]
+          started_at: string
+          status: Database["public"]["Enums"]["sync_status"]
+          workspace_id: string
+        }
+        Insert: {
+          accounts?: number
+          campaigns?: number
+          failed_accounts?: number
+          finished_at?: string | null
+          id?: string
+          message?: string | null
+          platform: Database["public"]["Enums"]["platform"]
+          started_at?: string
+          status: Database["public"]["Enums"]["sync_status"]
+          workspace_id: string
+        }
+        Update: {
+          accounts?: number
+          campaigns?: number
+          failed_accounts?: number
+          finished_at?: string | null
+          id?: string
+          message?: string | null
+          platform?: Database["public"]["Enums"]["platform"]
+          started_at?: string
+          status?: Database["public"]["Enums"]["sync_status"]
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_runs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspaces: {
         Row: {
           agent_stopped: boolean
@@ -58,10 +822,44 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_browser_run_owner: { Args: { _run_id: string }; Returns: boolean }
+      is_workspace_owner: { Args: { _workspace_id: string }; Returns: boolean }
+      seed_demo_workspace: { Args: { _ws: string }; Returns: undefined }
     }
     Enums: {
-      [_ in never]: never
+      browser_agent_mode: "ANALYZE" | "APPROVAL" | "PRIME"
+      browser_agent_run_status:
+        | "STARTING"
+        | "RUNNING"
+        | "WAITING_APPROVAL"
+        | "COMPLETED"
+        | "PARTIAL"
+        | "BLOCKED"
+        | "NEEDS_INPUT"
+        | "MODE_MISMATCH"
+        | "FAILED"
+        | "STOPPED"
+      browser_approval_status: "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED"
+      companion_status: "OFFLINE" | "ONLINE" | "BUSY" | "STOPPED" | "ERROR"
+      decision_action_type:
+        | "PAUSE_CAMPAIGN"
+        | "RESUME_CAMPAIGN"
+        | "INCREASE_BUDGET"
+        | "DECREASE_BUDGET"
+        | "ROTATE_CREATIVE"
+      decision_source: "RULE_ENGINE" | "AI" | "MCP" | "MANUAL"
+      decision_status:
+        | "PENDING"
+        | "APPROVED"
+        | "REJECTED"
+        | "EXECUTED"
+        | "FAILED"
+        | "EXPIRED"
+      execution_channel: "API" | "BROWSER" | "SIMULATED"
+      integration_status: "DISCONNECTED" | "CONNECTED" | "EXPIRED" | "ERROR"
+      platform: "META" | "GOOGLE_ADS" | "GA4"
+      risk_level: "LOW" | "MEDIUM" | "HIGH"
+      sync_status: "RUNNING" | "SUCCESS" | "PARTIAL" | "FAILED"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -188,6 +986,43 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      browser_agent_mode: ["ANALYZE", "APPROVAL", "PRIME"],
+      browser_agent_run_status: [
+        "STARTING",
+        "RUNNING",
+        "WAITING_APPROVAL",
+        "COMPLETED",
+        "PARTIAL",
+        "BLOCKED",
+        "NEEDS_INPUT",
+        "MODE_MISMATCH",
+        "FAILED",
+        "STOPPED",
+      ],
+      browser_approval_status: ["PENDING", "APPROVED", "REJECTED", "EXPIRED"],
+      companion_status: ["OFFLINE", "ONLINE", "BUSY", "STOPPED", "ERROR"],
+      decision_action_type: [
+        "PAUSE_CAMPAIGN",
+        "RESUME_CAMPAIGN",
+        "INCREASE_BUDGET",
+        "DECREASE_BUDGET",
+        "ROTATE_CREATIVE",
+      ],
+      decision_source: ["RULE_ENGINE", "AI", "MCP", "MANUAL"],
+      decision_status: [
+        "PENDING",
+        "APPROVED",
+        "REJECTED",
+        "EXECUTED",
+        "FAILED",
+        "EXPIRED",
+      ],
+      execution_channel: ["API", "BROWSER", "SIMULATED"],
+      integration_status: ["DISCONNECTED", "CONNECTED", "EXPIRED", "ERROR"],
+      platform: ["META", "GOOGLE_ADS", "GA4"],
+      risk_level: ["LOW", "MEDIUM", "HIGH"],
+      sync_status: ["RUNNING", "SUCCESS", "PARTIAL", "FAILED"],
+    },
   },
 } as const
