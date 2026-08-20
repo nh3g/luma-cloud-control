@@ -63,7 +63,7 @@ async function pedir<T>(caminho: string, init?: RequestInit): Promise<T> {
     }
     if (resposta.status === 402) {
       throw new Error(
-        `A conta do serviço de navegador está sem créditos.${detalhe ? ` (${detalhe})` : ""}`,
+        "A conta do serviço de navegador (Browser Use) está sem saldo: é preciso ao menos US$ 0,10 em créditos para iniciar uma coleta. Adicione créditos em cloud.browser-use.com e tente de novo. Enquanto isso, use a origem \"API oficial\" ou \"Demonstração\".",
       );
     }
     throw new Error(`Serviço de navegador respondeu ${resposta.status}: ${detalhe}`);
