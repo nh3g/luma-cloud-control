@@ -586,7 +586,7 @@ export const conversarEstrategista = createServerFn({ method: "POST" })
     const ws = await obterWorkspaceId(context.supabase);
     const { data: workspace } = await context.supabase
       .from("workspaces")
-      .select("demo_mode, agent_stopped")
+      .select("demo_mode, agent_stopped, ai_model")
       .eq("id", ws)
       .maybeSingle();
 
@@ -594,6 +594,7 @@ export const conversarEstrategista = createServerFn({ method: "POST" })
     return conversar(context.supabase, ws, data.historico, data.modo, {
       demo: workspace?.demo_mode !== false,
       parado: workspace?.agent_stopped === true,
+      modelo: workspace?.ai_model ?? undefined,
     });
   });
 
