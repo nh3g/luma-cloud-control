@@ -64,6 +64,7 @@ export function AppLayout() {
   const queryClient = useQueryClient();
   const { data: workspace, isLoading } = useWorkspace();
   const navigate = useNavigate();
+  const [menuAberto, setMenuAberto] = useState(false);
 
   const adiantar = (destino: string) => {
     const alvo = PRE_CARGA[destino];
@@ -76,61 +77,84 @@ export function AppLayout() {
     void navigate({ to: "/auth" });
   };
 
+  const conteudoMenu = (
+    <>
+      <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-5">
+        <span className="text-lg font-bold tracking-[0.2em] text-primary">LUMA</span>
+        <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+          v3
+        </span>
+      </div>
+      <nav className="flex-1 space-y-0.5 overflow-y-auto p-2">
+        {NAV.map(({ to, label, icon: Icon }) => (
+          <Link
+            key={to}
+            to={to}
+            preload="intent"
+            onMouseEnter={() => adiantar(to)}
+            onFocus={() => adiantar(to)}
+            onClick={() => setMenuAberto(false)}
+            activeOptions={{ exact: to === "/" }}
+            className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            activeProps={{
+              className:
+                "bg-sidebar-accent text-sidebar-accent-foreground font-medium border-l-2 border-primary",
+            }}
+          >
+            <Icon className="size-4 shrink-0" />
+            {label}
+          </Link>
+        ))}
+      </nav>
+      <button
+        type="button"
+        onClick={() => void sair()}
+        className="m-2 flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+      >
+        <LogOut className="size-4" />
+        Sair
+      </button>
+    </>
+  );
+
   return (
     <div className="flex min-h-screen bg-background text-foreground">
-      <aside className="fixed inset-y-0 left-0 flex w-60 flex-col border-r border-sidebar-border bg-sidebar">
-        <div className="flex h-14 items-center gap-2 border-b border-sidebar-border px-5">
-          <span className="text-lg font-bold tracking-[0.2em] text-primary">LUMA</span>
-          <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-            v3
-          </span>
-        </div>
-        <nav className="flex-1 space-y-0.5 overflow-y-auto p-2">
-          {NAV.map(({ to, label, icon: Icon }) => (
-            <Link
-              key={to}
-              to={to}
-              preload="intent"
-              onMouseEnter={() => adiantar(to)}
-              onFocus={() => adiantar(to)}
-              activeOptions={{ exact: to === "/" }}
-              className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              activeProps={{
-                className:
-                  "bg-sidebar-accent text-sidebar-accent-foreground font-medium border-l-2 border-primary",
-              }}
-            >
-              <Icon className="size-4 shrink-0" />
-              {label}
-            </Link>
-          ))}
-        </nav>
-        <button
-          type="button"
-          onClick={() => void sair()}
-          className="m-2 flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-        >
-          <LogOut className="size-4" />
-          Sair
-        </button>
+      <aside className="fixed inset-y-0 left-0 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
+        {conteudoMenu}
       </aside>
 
-      <div className="ml-60 flex min-h-screen flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-4 border-b border-border bg-background/95 px-6 backdrop-blur">
-          <div className="flex items-center gap-3">
+      <Sheet open={menuAberto} onOpenChange={setMenuAberto}>
+        <SheetContent side="left" className="flex w-64 flex-col gap-0 border-sidebar-border bg-sidebar p-0">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Menu de navegação</SheetTitle>
+          </SheetHeader>
+          {conteudoMenu}
+        </SheetContent>
+      </Sheet>
+
+      <div className="flex min-h-screen flex-1 flex-col lg:ml-60">
+        <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-4 border-b border-border bg-background/95 px-4 backdrop-blur sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <button
+              type="button"
+              aria-label="Abrir menu"
+              onClick={() => setMenuAberto(true)}
+              className="rounded-md p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-foreground lg:hidden"
+            >
+              <Menu className="size-5" />
+            </button>
             {workspace?.demo_mode && (
               <Link
                 to="/integracoes"
                 search={{ conectado: undefined, erro: undefined }}
-
                 title="Dados fictícios. Conecte suas contas para usar dados reais."
-                className="rounded border border-warning/40 bg-warning/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-warning transition-colors hover:bg-warning/20"
+                className="hidden rounded border border-warning/40 bg-warning/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-warning transition-colors hover:bg-warning/20 sm:inline-block"
               >
                 Modo demonstração
               </Link>
             )}
 
-            <span className="text-sm font-medium text-foreground">
+            <span className="truncate text-sm font-medium text-foreground">
               {isLoading ? "Carregando…" : (workspace?.name ?? "Workspace")}
             </span>
           </div>
@@ -138,7 +162,7 @@ export function AppLayout() {
           <div className="flex items-center gap-3">
             {workspace && <StopAgentButton workspace={workspace} />}
             <span
-              className="flex size-8 items-center justify-center rounded-full text-background"
+              className="flex size-8 shrink-0 items-center justify-center rounded-full text-background"
               style={{ backgroundColor: workspace?.profile_color ?? "#6f8cff" }}
             >
               <User className="size-4" />
@@ -148,10 +172,11 @@ export function AppLayout() {
 
         {workspace && <AgentStoppedBanner workspace={workspace} />}
 
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 sm:p-6">
           <Outlet />
         </main>
       </div>
     </div>
   );
 }
+
