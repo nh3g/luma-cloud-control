@@ -43,8 +43,55 @@ export async function salvarColeta(
     { onConflict: "workspace_id,platform" },
   );
   if (error) throw new Error(error.message);
+  await refletirIntegracao(sb, ws, entrada.plataforma, entrada.modo, entrada.conta);
   return { ok: true };
 }
+
+/**
+ * Mantém a lista de contas conectadas coerente com a origem escolhida: no modo
+ * navegador a plataforma conta como conta real conectada; ao sair desse modo a
+ * conexão criada pelo navegador volta a ficar desconectada.
+ */
+async function refletirIntegracao(
+  sb: Sb,
+  ws: string,
+  plataforma: Plataforma,
+  modo: "DEMO" | "API" | "BROWSER",
+  conta: string,
+) {
+  const { data: existente } = await sb
+    .from("integrations")
+    .select("id, metadata_json, status")
+    .eq("workspace_id", ws)
+    .eq("platform", plataforma)
+    .maybeSingle();
+
+  const nome = plataforma === "META" ? "Meta Ads (navegador)" : "Google Ads (navegador)";
+
+  if (modo === "BROWSER") {
+    const dados = {
+      workspace_id: ws,
+      platform: plataforma as "META" | "GOOGLE_ADS",
+      account_id: conta || null,
+      name: nome,
+      status: "CONNECTED" as const,
+      metadata_json: { origem: "NAVEGADOR" },
+      updated_at: new Date().toISOString(),
+    };
+    if (existente) await sb.from("integrations").update(dados).eq("id", existente.id);
+    else await sb.from("integrations").insert(dados);
+    return;
+  }
+
+  const origem = (existente?.metadata_json as { origem?: string } | null)?.origem;
+  if (existente && origem === "NAVEGADOR") {
+    await sb
+      .from("integrations")
+      .update({ status: "DISCONNECTED", updated_at: new Date().toISOString() })
+      .eq("id", existente.id);
+  }
+}
+
 
 /** Dispara uma coleta por navegador para a plataforma escolhida. */
 export async function dispararColeta(sb: Sb, ws: string, plataforma: Plataforma) {

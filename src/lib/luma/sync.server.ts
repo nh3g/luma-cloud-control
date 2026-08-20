@@ -220,9 +220,10 @@ export async function gravarCampanhas(
  * execução em `sync_runs`.
  */
 export async function sincronizarWorkspace(sb: Sb, ws: string): Promise<ResumoSync[]> {
-  const [{ data: workspace }, { data: integracoes }] = await Promise.all([
+  const [{ data: workspace }, { data: integracoes }, { data: coletas }] = await Promise.all([
     sb.from("workspaces").select("demo_mode, agent_stopped").eq("id", ws).maybeSingle(),
     sb.from("integrations").select("*").eq("workspace_id", ws).eq("status", "CONNECTED"),
+    sb.from("browser_collections").select("platform, mode").eq("workspace_id", ws),
   ]);
   if (workspace?.agent_stopped) throw new Error("O agente está parado. Reative o agente para sincronizar.");
   const conectadas = integracoes ?? [];
@@ -230,10 +231,24 @@ export async function sincronizarWorkspace(sb: Sb, ws: string): Promise<ResumoSy
     throw new Error("Nenhuma integração conectada. Conecte Meta Ads ou Google Ads para sincronizar.");
   }
 
+  const porNavegador = new Set((coletas ?? []).filter((c) => c.mode === "BROWSER").map((c) => c.platform));
   const demo = workspace?.demo_mode !== false;
   const resumos: ResumoSync[] = [];
 
   for (const integracao of conectadas) {
+    // Plataformas em modo navegador não são simuladas: os números vêm da coleta.
+    if (porNavegador.has(integracao.platform)) {
+      resumos.push({
+        platform: integracao.platform,
+        status: "SUCCESS",
+        campanhas: 0,
+        contas: 1,
+        contasComFalha: 0,
+        mensagem: "Origem em navegador: use “Coletar agora” em Integrações para atualizar os números.",
+      });
+      continue;
+    }
+
     const inicio = new Date().toISOString();
     const { data: run } = await sb
       .from("sync_runs")
@@ -246,6 +261,7 @@ export async function sincronizarWorkspace(sb: Sb, ws: string): Promise<ResumoSy
       })
       .select("id")
       .single();
+
 
     try {
       let campanhas: CampanhaExterna[];
