@@ -92,11 +92,29 @@ const esquemaSaida = {
   required: ["campaigns"],
 };
 
+/** Aceita "act_123", "123", "123-456-7890" ou o nome da conta. */
+function contaLegivel(conta: string) {
+  return conta.trim();
+}
+
+/** Só vira parâmetro de URL quando parece um ID numérico da Meta. */
+function idNumericoMeta(conta: string): string | null {
+  const limpo = conta.trim().replace(/^act_/i, "");
+  return /^\d{5,}$/.test(limpo) ? limpo : null;
+}
+
+function alvoConta(conta: string) {
+  const nome = contaLegivel(conta);
+  return nome
+    ? `na conta "${nome}" (se houver seletor de contas, escolha essa)`
+    : "na conta de anúncios já ativa na sessão (não troque de conta)";
+}
+
 function instrucao(plataforma: "META" | "GOOGLE_ADS", conta: string, dias: number) {
   const periodo = `últimos ${dias} dias`;
   if (plataforma === "META") {
     return [
-      `Abra o Gerenciador de Anúncios da Meta na conta ${conta || "padrão do usuário"}.`,
+      `Abra o Gerenciador de Anúncios da Meta ${alvoConta(conta)}.`,
       "Se aparecer tela de login, PARE e aguarde a pessoa entrar manualmente na sessão ao vivo; depois continue.",
       `Vá para a aba Campanhas e ajuste o período para os ${periodo}.`,
       "Garanta que as colunas mostrem: orçamento diário, valor gasto, impressões, cliques, resultados/conversões, valor de conversão de compras e frequência.",
@@ -107,7 +125,7 @@ function instrucao(plataforma: "META" | "GOOGLE_ADS", conta: string, dias: numbe
     ].join(" ");
   }
   return [
-    `Abra o Google Ads na conta ${conta || "padrão do usuário"}.`,
+    `Abra o Google Ads ${alvoConta(conta)}.`,
     "Se aparecer tela de login, PARE e aguarde a pessoa entrar manualmente na sessão ao vivo; depois continue.",
     `Vá para Campanhas e ajuste o período para os ${periodo}.`,
     "Garanta que as colunas mostrem: orçamento, custo, impressões, cliques, conversões e valor de conversão.",
@@ -118,10 +136,11 @@ function instrucao(plataforma: "META" | "GOOGLE_ADS", conta: string, dias: numbe
 }
 
 function urlInicial(plataforma: "META" | "GOOGLE_ADS", conta: string) {
-  return plataforma === "META"
-    ? `https://adsmanager.facebook.com/adsmanager/manage/campaigns${conta ? `?act=${encodeURIComponent(conta.replace(/^act_/, ""))}` : ""}`
-    : "https://ads.google.com/aw/campaigns";
+  if (plataforma !== "META") return "https://ads.google.com/aw/campaigns";
+  const id = idNumericoMeta(conta);
+  return `https://adsmanager.facebook.com/adsmanager/manage/campaigns${id ? `?act=${id}` : ""}`;
 }
+
 
 /** Cria (ou reaproveita) um perfil de navegador para manter o login salvo. */
 export async function garantirPerfil(perfilAtual: string | null): Promise<string> {
