@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Bot, ExternalLink, Play, Square } from "lucide-react";
+import { Bot, CheckCircle2, ExternalLink, LogIn, Play, Square, Unplug } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,11 +18,14 @@ import { ChaveNavegador } from "@/components/luma/ChaveNavegador";
 import { formatarDataHora } from "@/lib/luma/format";
 import {
   acompanharColetaNavegador,
+  conectarContaNavegador,
+  desconectarContaNavegador,
   iniciarColetaNavegador,
   obterColetaNavegador,
   pararColetaNavegador,
   salvarColetaNavegador,
 } from "@/lib/luma.functions";
+
 
 type Plataforma = "META" | "GOOGLE_ADS";
 
