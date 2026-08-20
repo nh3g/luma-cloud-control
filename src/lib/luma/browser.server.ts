@@ -101,8 +101,9 @@ function idNumericoMeta(conta: string): string | null {
 
 function alvoConta(conta: string) {
   const nome = contaLegivel(conta);
+  const id = idNumericoMeta(conta);
   return nome
-    ? `na conta "${nome}" (se houver seletor de contas, escolha essa)`
+    ? `na conta "${nome}"${id ? ` (ID ${id})` : ""} — no seletor de contas, escolha essa conta`
     : "na conta de anúncios já ativa na sessão (não troque de conta)";
 }
 
@@ -110,8 +111,10 @@ function instrucao(plataforma: "META" | "GOOGLE_ADS", conta: string, dias: numbe
   const periodo = `últimos ${dias} dias`;
   if (plataforma === "META") {
     return [
-      `Abra o Gerenciador de Anúncios da Meta ${alvoConta(conta)}.`,
+      "Você começa na página do Gerenciador de Anúncios da Meta (pt-br.facebook.com/business/tools/ads-manager).",
+      "A partir dela, clique no botão de acesso ao Gerenciador de Anúncios para abrir o painel.",
       "Se aparecer tela de login, PARE e aguarde a pessoa entrar manualmente na sessão ao vivo; depois continue.",
+      `Trabalhe ${alvoConta(conta)}.`,
       `Vá para a aba Campanhas e ajuste o período para os ${periodo}.`,
       "Garanta que as colunas mostrem: orçamento diário, valor gasto, impressões, cliques, resultados/conversões, valor de conversão de compras e frequência.",
       "Leia TODAS as campanhas listadas (role a tabela até o fim).",
