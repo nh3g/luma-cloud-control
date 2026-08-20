@@ -79,10 +79,12 @@ function agregarPorDia(snapshots: Snapshot[]) {
 }
 
 function Pagina() {
+  const { data: workspace } = useWorkspace();
   const { data, isLoading, error } = useQuery({
     queryKey: ["visao-geral"],
     queryFn: () => obterVisaoGeral(),
   });
+
 
   const resumo = useMemo(() => {
     const snaps = (data?.snapshots ?? []) as Snapshot[];
