@@ -103,7 +103,11 @@ export async function dispararColeta(sb: Sb, ws: string, plataforma: Plataforma)
     .select("agent_stopped, ai_model")
     .eq("id", ws)
     .maybeSingle();
-  if (workspace?.agent_stopped) throw new Error("O agente está parado. Reative o agente para coletar.");
+  if (workspace?.agent_stopped) {
+    throw new Error(
+      'O agente está parado. Clique em "PARAR AGENTE" no topo da tela para reativá-lo e tente coletar de novo.',
+    );
+  }
 
   const { data: config } = await sb
     .from("browser_collections")
