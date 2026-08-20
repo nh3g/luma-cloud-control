@@ -149,9 +149,18 @@ function Pagina() {
     onError: (erro: Error) => toast.error(erro.message),
   });
 
+  if (error) {
+    return (
+      <div className="p-6">
+        <ErroTela erro={error} aoTentarNovamente={() => void refetch()} titulo="Não foi possível carregar o agente" />
+      </div>
+    );
+  }
+
   if (isLoading || !data) {
     return <p className="p-6 text-sm text-muted-foreground">Carregando agente…</p>;
   }
+
 
   const parado = data.workspace?.agent_stopped === true;
   const pendentes = data.aprovacoes.filter((a) => a.status === "PENDING");
