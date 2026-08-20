@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatarDataHora, formatarRelativo } from "@/lib/luma/format";
 import { gerarChaveMcp, listarChavesMcp, revogarChaveMcp } from "@/lib/luma.functions";
+import { ConfirmarAcao } from "@/components/luma/ConfirmarAcao";
+
 
 /** Bloco de acesso MCP: chaves para agentes externos (Claude, ChatGPT, Cursor). */
 export function AcessoMcp() {
@@ -111,9 +113,19 @@ export function AcessoMcp() {
                   Criada em {formatarDataHora(c.created_at)} · último uso {formatarRelativo(c.last_used_at)}
                 </p>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => mRevogar.mutate(c.id)} aria-label="Revogar chave">
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <ConfirmarAcao
+                titulo={`Revogar a chave "${c.label}"?`}
+                descricao="O agente externo que usa esta chave perde o acesso imediatamente. Essa ação não pode ser desfeita."
+                rotuloConfirmar="Revogar chave"
+                aoConfirmar={() => mRevogar.mutate(c.id)}
+              >
+                {(abrir) => (
+                  <Button variant="ghost" size="sm" onClick={abrir} aria-label="Revogar chave">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </ConfirmarAcao>
+
             </li>
           ))}
         </ul>

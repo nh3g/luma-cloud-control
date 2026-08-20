@@ -8,6 +8,9 @@ import { Bot, Check, Laptop, Play, Plus, ShieldAlert, Square, Trash2, X } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ConfirmarAcao } from "@/components/luma/ConfirmarAcao";
+import { ErroTela } from "@/components/luma/Estados";
+
 import { formatarDataHora, formatarRelativo, rotuloRisco, rotuloStatusCompanion } from "@/lib/luma/format";
 import {
   criarDispositivo,
@@ -77,7 +80,7 @@ function Pagina() {
   const [aviso, setAviso] = useState<string | null>(null);
   const [runAberta, setRunAberta] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["agente"],
     queryFn: () => carregar(),
     refetchInterval: 8000,
@@ -146,9 +149,18 @@ function Pagina() {
     onError: (erro: Error) => toast.error(erro.message),
   });
 
+  if (error) {
+    return (
+      <div className="p-6">
+        <ErroTela erro={error} aoTentarNovamente={() => void refetch()} titulo="Não foi possível carregar o agente" />
+      </div>
+    );
+  }
+
   if (isLoading || !data) {
     return <p className="p-6 text-sm text-muted-foreground">Carregando agente…</p>;
   }
+
 
   const parado = data.workspace?.agent_stopped === true;
   const pendentes = data.aprovacoes.filter((a) => a.status === "PENDING");
@@ -252,9 +264,19 @@ function Pagina() {
                     {d.browser_label ? ` · ${d.browser_label}` : ""}
                   </p>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => mRemover.mutate(d.id)} aria-label="Remover dispositivo">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <ConfirmarAcao
+                  titulo={`Remover "${d.name}"?`}
+                  descricao="O dispositivo será despareado e precisará de um novo código para voltar a executar tarefas."
+                  rotuloConfirmar="Remover dispositivo"
+                  aoConfirmar={() => mRemover.mutate(d.id)}
+                >
+                  {(abrir) => (
+                    <Button variant="ghost" size="sm" onClick={abrir} aria-label="Remover dispositivo">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </ConfirmarAcao>
+
               </li>
             ))}
           </ul>

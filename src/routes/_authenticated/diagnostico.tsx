@@ -14,6 +14,7 @@ import {
 } from "@/lib/luma/format";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ErroTela } from "@/components/luma/Estados";
 
 export const Route = createFileRoute("/_authenticated/diagnostico")({
   head: () => ({
@@ -38,10 +39,14 @@ export const Route = createFileRoute("/_authenticated/diagnostico")({
 });
 
 function Pagina() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["diagnostico"],
     queryFn: () => obterDiagnostico(),
   });
+
+  if (error) {
+    return <ErroTela erro={error} aoTentarNovamente={() => void refetch()} titulo="Não foi possível carregar o diagnóstico" />;
+  }
 
   if (isLoading || !data) {
     return (

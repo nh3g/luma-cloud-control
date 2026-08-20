@@ -22,6 +22,7 @@ import {
   listarIntegracoes,
   sincronizarAgora,
 } from "@/lib/luma.functions";
+import { ErroTela } from "@/components/luma/Estados";
 
 const descricao =
   "Conecte Meta Ads e Google Ads, sincronize suas contas e acompanhe cada execução de sincronização.";
@@ -68,7 +69,7 @@ function Pagina() {
   const conectar = useServerFn(iniciarConexao);
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({ queryKey: ["integracoes"], queryFn: () => carregar() });
+  const { data, isLoading, error, refetch } = useQuery({ queryKey: ["integracoes"], queryFn: () => carregar() });
 
   useEffect(() => {
     if (busca.conectado) toast.success(`${rotuloPlataforma[busca.conectado] ?? busca.conectado} conectado com sucesso.`);
@@ -120,6 +121,10 @@ function Pagina() {
     },
     onError: (erro: Error) => toast.error(erro.message),
   });
+
+  if (error) {
+    return <ErroTela erro={error} aoTentarNovamente={() => void refetch()} titulo="Não foi possível carregar as integrações" />;
+  }
 
   if (isLoading || !data) {
     return <p className="p-6 text-sm text-muted-foreground">Carregando integrações…</p>;

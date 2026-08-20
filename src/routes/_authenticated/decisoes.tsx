@@ -21,6 +21,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ErroTela } from "@/components/luma/Estados";
+import { ConfirmarAcao } from "@/components/luma/ConfirmarAcao";
+
 
 export const Route = createFileRoute("/_authenticated/decisoes")({
   head: () => ({
@@ -75,10 +78,11 @@ function Pagina() {
   const { data: workspace } = useWorkspace();
   const [aba, setAba] = useState("PENDING");
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["decisoes"],
     queryFn: () => listarDecisoes(),
   });
+
 
   const decidir = useServerFn(decidirDecisao);
   const mutacao = useMutation({
@@ -201,10 +205,13 @@ function Pagina() {
         </TabsList>
       </Tabs>
 
-      {isLoading ? (
+      {error ? (
+        <ErroTela erro={error} aoTentarNovamente={() => void refetch()} titulo="Não foi possível carregar as decisões" />
+      ) : isLoading ? (
         <div className="flex items-center gap-2 py-16 text-muted-foreground">
           <Loader2 className="size-4 animate-spin" /> Carregando decisões…
         </div>
+
       ) : visiveis.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-sm text-muted-foreground">
@@ -271,14 +278,24 @@ function Pagina() {
                       >
                         <Check className="mr-1 size-4" /> Aprovar
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={agenteParado || mutacao.isPending}
-                        onClick={() => mutacao.mutate({ id: d.id, acao: "RECUSAR" })}
+                      <ConfirmarAcao
+                        titulo="Recusar esta decisão?"
+                        descricao="A decisão sai da fila e não poderá mais ser aprovada. O agente só voltará a propor algo parecido na próxima análise."
+                        rotuloConfirmar="Recusar decisão"
+                        aoConfirmar={() => mutacao.mutate({ id: d.id, acao: "RECUSAR" })}
                       >
-                        <X className="mr-1 size-4" /> Recusar
-                      </Button>
+                        {(abrir) => (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={agenteParado || mutacao.isPending}
+                            onClick={abrir}
+                          >
+                            <X className="mr-1 size-4" /> Recusar
+                          </Button>
+                        )}
+                      </ConfirmarAcao>
+
                     </div>
                   ) : d.status === "APPROVED" && restante !== null ? (
                     <div className="flex shrink-0 flex-col items-end gap-1">
