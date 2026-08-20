@@ -13,7 +13,19 @@ import {
   User,
 } from "lucide-react";
 
+import { useQueryClient } from "@tanstack/react-query";
+
 import { supabase } from "@/integrations/supabase/client";
+import {
+  listarAgente,
+  listarCampanhas,
+  listarDecisoes,
+  listarIntegracoes,
+  listarNotas,
+  obterConfiguracoes,
+  obterDiagnostico,
+  obterVisaoGeral,
+} from "@/lib/luma.functions";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { AgentStoppedBanner, StopAgentButton } from "./StopAgentButton";
 
@@ -29,9 +41,28 @@ const NAV = [
   { to: "/diagnostico", label: "Diagnóstico", icon: Stethoscope },
 ] as const;
 
+/** Dados de cada página, para adiantar a busca assim que o mouse encosta no menu. */
+const PRE_CARGA: Record<string, { chave: string; buscar: () => Promise<unknown> }> = {
+  "/": { chave: "visao-geral", buscar: () => obterVisaoGeral() },
+  "/campanhas": { chave: "campanhas", buscar: () => listarCampanhas() },
+  "/decisoes": { chave: "decisoes", buscar: () => listarDecisoes() },
+  "/agente-navegador": { chave: "agente", buscar: () => listarAgente() },
+  "/integracoes": { chave: "integracoes", buscar: () => listarIntegracoes() },
+  "/notas": { chave: "notas", buscar: () => listarNotas() },
+  "/configuracoes": { chave: "configuracoes", buscar: () => obterConfiguracoes() },
+  "/diagnostico": { chave: "diagnostico", buscar: () => obterDiagnostico() },
+};
+
 export function AppLayout() {
+  const queryClient = useQueryClient();
   const { data: workspace, isLoading } = useWorkspace();
   const navigate = useNavigate();
+
+  const adiantar = (destino: string) => {
+    const alvo = PRE_CARGA[destino];
+    if (!alvo) return;
+    void queryClient.prefetchQuery({ queryKey: [alvo.chave], queryFn: alvo.buscar, staleTime: 60_000 });
+  };
 
   const sair = async () => {
     await supabase.auth.signOut();
@@ -52,6 +83,9 @@ export function AppLayout() {
             <Link
               key={to}
               to={to}
+              preload="intent"
+              onMouseEnter={() => adiantar(to)}
+              onFocus={() => adiantar(to)}
               activeOptions={{ exact: to === "/" }}
               className="flex items-center gap-2.5 rounded-md px-3 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               activeProps={{
