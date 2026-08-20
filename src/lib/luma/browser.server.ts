@@ -107,13 +107,16 @@ function alvoConta(conta: string) {
     : "na conta de anúncios já ativa na sessão (não troque de conta)";
 }
 
+const ESPERA_LOGIN =
+  "Se a página pedir login/entrada, NÃO digite nada e NÃO recarregue a página: a pessoa vai entrar manualmente pela janela ao vivo. Apenas aguarde de forma passiva, verificando a cada poucos segundos, até o painel logado aparecer; então continue a tarefa.";
+
 function instrucao(plataforma: "META" | "GOOGLE_ADS", conta: string, dias: number) {
   const periodo = `últimos ${dias} dias`;
   if (plataforma === "META") {
     return [
-      "Você começa na página do Gerenciador de Anúncios da Meta (pt-br.facebook.com/business/tools/ads-manager).",
-      "A partir dela, clique no botão de acesso ao Gerenciador de Anúncios para abrir o painel.",
-      "Se aparecer tela de login, PARE e aguarde a pessoa entrar manualmente na sessão ao vivo; depois continue.",
+      ESPERA_LOGIN,
+      "Se a sessão já estiver logada no Gerenciador de Anúncios (adsmanager.facebook.com/adsmanager/manage/campaigns), siga a partir dessa tela mesmo, sem voltar para a página institucional.",
+      "Se você estiver na página institucional do Gerenciador de Anúncios, clique no botão de acesso ao Gerenciador para abrir o painel.",
       `Trabalhe ${alvoConta(conta)}.`,
       `Vá para a aba Campanhas e ajuste o período para os ${periodo}.`,
       "Garanta que as colunas mostrem: orçamento diário, valor gasto, impressões, cliques, resultados/conversões, valor de conversão de compras e frequência.",
@@ -124,8 +127,8 @@ function instrucao(plataforma: "META" | "GOOGLE_ADS", conta: string, dias: numbe
     ].join(" ");
   }
   return [
+    ESPERA_LOGIN,
     `Abra o Google Ads ${alvoConta(conta)}.`,
-    "Se aparecer tela de login, PARE e aguarde a pessoa entrar manualmente na sessão ao vivo; depois continue.",
     `Vá para Campanhas e ajuste o período para os ${periodo}.`,
     "Garanta que as colunas mostrem: orçamento, custo, impressões, cliques, conversões e valor de conversão.",
     "Leia TODAS as campanhas listadas (role a tabela até o fim).",
@@ -133,6 +136,7 @@ function instrucao(plataforma: "META" | "GOOGLE_ADS", conta: string, dias: numbe
     "Devolva os números em JSON: budget_daily, spend e revenue em reais (número puro); revenue é o valor de conversão; frequency sempre 0.",
   ].join(" ");
 }
+
 
 const URL_META = "https://pt-br.facebook.com/business/tools/ads-manager";
 
