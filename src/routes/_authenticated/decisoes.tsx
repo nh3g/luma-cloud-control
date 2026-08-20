@@ -21,6 +21,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ErroTela } from "@/components/luma/Estados";
+import { ConfirmarAcao } from "@/components/luma/ConfirmarAcao";
+
 
 export const Route = createFileRoute("/_authenticated/decisoes")({
   head: () => ({
