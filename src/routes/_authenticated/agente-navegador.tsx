@@ -8,6 +8,9 @@ import { Bot, Check, Laptop, Play, Plus, ShieldAlert, Square, Trash2, X } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ConfirmarAcao } from "@/components/luma/ConfirmarAcao";
+import { ErroTela } from "@/components/luma/Estados";
+
 import { formatarDataHora, formatarRelativo, rotuloRisco, rotuloStatusCompanion } from "@/lib/luma/format";
 import {
   criarDispositivo,
