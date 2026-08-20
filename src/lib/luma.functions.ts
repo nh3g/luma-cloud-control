@@ -814,3 +814,34 @@ export const revogarChaveMcp = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+const mensagemChat = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().min(1).max(6000),
+});
+
+/** Conversa com a estrategista de IA usando os dados reais do workspace. */
+export const conversarEstrategista = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((dados: unknown) =>
+    z
+      .object({
+        historico: z.array(mensagemChat).min(1).max(24),
+        modo: z.enum(["RAPIDO", "PRIME"]).default("RAPIDO"),
+      })
+      .parse(dados),
+  )
+  .handler(async ({ context, data }) => {
+    const ws = await obterWorkspaceId(context.supabase);
+    const { data: workspace } = await context.supabase
+      .from("workspaces")
+      .select("demo_mode, agent_stopped")
+      .eq("id", ws)
+      .maybeSingle();
+
+    const { conversar } = await import("./luma/estrategista.server");
+    return conversar(context.supabase, ws, data.historico, data.modo, {
+      demo: workspace?.demo_mode !== false,
+      parado: workspace?.agent_stopped === true,
+    });
+  });
