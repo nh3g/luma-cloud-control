@@ -126,6 +126,7 @@ function Pagina() {
   const campanhas = data?.campanhas ?? [];
   const ativas = campanhas.filter((c) => c.status === "ACTIVE").length;
   const pendentes = (data?.decisoes ?? []).filter((d) => d.status === "PENDING").length;
+  const aguardandoExecucao = (data?.decisoes ?? []).filter((d) => d.status === "APPROVED").length;
 
   return (
     <div className="space-y-6">
@@ -136,6 +137,17 @@ function Pagina() {
           {pendentes} decisões aguardando você
         </p>
       </header>
+
+      {aguardandoExecucao > 0 ? (
+        <Link
+          to="/decisoes"
+          className="block rounded-lg border border-primary/40 bg-primary/10 p-3 text-sm text-primary"
+        >
+          {aguardandoExecucao} decisão(ões) aprovada(s) aguardando execução. A aprovação vale uma
+          única vez e expira — abrir fila de decisões.
+        </Link>
+      ) : null}
+
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Metrica titulo="Investimento" valor={formatarMoeda(resumo.investimento)} />
