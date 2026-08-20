@@ -745,6 +745,35 @@ export type Database = {
           },
         ]
       }
+      service_credentials: {
+        Row: {
+          api_key: string
+          service: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          api_key: string
+          service: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          api_key?: string
+          service?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_credentials_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sync_runs: {
         Row: {
           accounts: number
