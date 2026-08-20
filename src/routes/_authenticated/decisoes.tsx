@@ -138,6 +138,12 @@ function Pagina() {
 
   const visiveis = listas[aba as keyof typeof listas] ?? listas.TODAS;
 
+  const vencendoEmBreve = listas.PENDING.filter(
+    (d) => new Date(d.expires_at).getTime() - Date.now() <= 3_600_000,
+  ).length;
+
+
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
