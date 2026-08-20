@@ -49,28 +49,30 @@ export async function limparDados(
 
   if (ids.length > 0) {
     // Com período escolhido, apagamos só o histórico da janela e mantemos as campanhas.
-    let medicoes = sb.from("metric_snapshots").delete().eq("workspace_id", ws).in("campaign_id", ids);
+    let medicoes = sb
+      .from("metric_snapshots")
+      .delete({ count: "exact" })
+      .eq("workspace_id", ws)
+      .in("campaign_id", ids);
     if (desde) medicoes = medicoes.gte("captured_at", desde);
-    const { error: erroMedicoes, count: apagadas } = await medicoes.select("id", { count: "exact" });
+    const { error: erroMedicoes, count: apagadas } = await medicoes;
     if (erroMedicoes) throw new Error(erroMedicoes.message);
     resultado.medicoes = apagadas ?? 0;
 
     if (!desde) {
       const { error: erroDecisoes, count: dec } = await sb
         .from("decisions")
-        .delete()
+        .delete({ count: "exact" })
         .eq("workspace_id", ws)
-        .in("campaign_id", ids)
-        .select("id", { count: "exact" });
+        .in("campaign_id", ids);
       if (erroDecisoes) throw new Error(erroDecisoes.message);
       resultado.decisoes = dec ?? 0;
 
       const { error: erroCampanhas, count: camp } = await sb
         .from("campaigns")
-        .delete()
+        .delete({ count: "exact" })
         .eq("workspace_id", ws)
-        .in("id", ids)
-        .select("id", { count: "exact" });
+        .in("id", ids);
       if (erroCampanhas) throw new Error(erroCampanhas.message);
       resultado.campanhas = camp ?? 0;
     }
@@ -78,15 +80,15 @@ export async function limparDados(
 
   if (!desde) {
     // Histórico de execuções da mesma plataforma, para não sobrar registro órfão.
-    let syncs = sb.from("sync_runs").delete().eq("workspace_id", ws);
+    let syncs = sb.from("sync_runs").delete({ count: "exact" }).eq("workspace_id", ws);
     if (entrada.plataforma !== "TODAS") syncs = syncs.eq("platform", entrada.plataforma);
-    const { count: s } = await syncs.select("id", { count: "exact" });
+    const { count: s } = await syncs;
     resultado.sincronizacoes = s ?? 0;
 
     if (!demo) {
-      let coletas = sb.from("browser_collection_runs").delete().eq("workspace_id", ws);
+      let coletas = sb.from("browser_collection_runs").delete({ count: "exact" }).eq("workspace_id", ws);
       if (entrada.plataforma !== "TODAS") coletas = coletas.eq("platform", entrada.plataforma);
-      const { count: c } = await coletas.select("id", { count: "exact" });
+      const { count: c } = await coletas;
       resultado.coletas = c ?? 0;
     }
 
