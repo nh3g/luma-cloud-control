@@ -96,7 +96,7 @@ export async function analisarRelatorio(entrada: {
   plataforma: Plataforma;
   conteudo: string;
   dias: number;
-  modelo?: string;
+  modelo?: string | undefined;
 }): Promise<PreviaImportacao> {
   const conteudo = entrada.conteudo.trim();
   if (conteudo.length < 20) throw new Error("Cole o relatório exportado ou o conteúdo da tabela de campanhas.");
@@ -168,7 +168,7 @@ export async function analisarRelatorio(entrada: {
 export async function confirmarRelatorio(
   sb: Sb,
   ws: string,
-  entrada: { plataforma: Plataforma; dias: number; campanhas: CampanhaExterna[]; rotulo?: string },
+  entrada: { plataforma: Plataforma; dias: number; campanhas: CampanhaExterna[]; rotulo?: string | undefined },
 ) {
   if (entrada.campanhas.length === 0) throw new Error("Não há campanhas para importar.");
 
