@@ -106,8 +106,10 @@ export type Database = {
           error: string | null
           finished_at: string | null
           id: string
+          kind: string
           live_url: string | null
           platform: Database["public"]["Enums"]["platform"]
+          session_id: string | null
           started_at: string
           status: Database["public"]["Enums"]["browser_run_status"]
           step: string | null
@@ -119,8 +121,10 @@ export type Database = {
           error?: string | null
           finished_at?: string | null
           id?: string
+          kind?: string
           live_url?: string | null
           platform: Database["public"]["Enums"]["platform"]
+          session_id?: string | null
           started_at?: string
           status?: Database["public"]["Enums"]["browser_run_status"]
           step?: string | null
@@ -132,8 +136,10 @@ export type Database = {
           error?: string | null
           finished_at?: string | null
           id?: string
+          kind?: string
           live_url?: string | null
           platform?: Database["public"]["Enums"]["platform"]
+          session_id?: string | null
           started_at?: string
           status?: Database["public"]["Enums"]["browser_run_status"]
           step?: string | null
@@ -152,6 +158,7 @@ export type Database = {
       }
       browser_collections: {
         Row: {
+          connected_at: string | null
           created_at: string
           external_account_id: string | null
           id: string
@@ -159,10 +166,12 @@ export type Database = {
           mode: Database["public"]["Enums"]["collection_mode"]
           platform: Database["public"]["Enums"]["platform"]
           profile_id: string | null
+          session_id: string | null
           updated_at: string
           workspace_id: string
         }
         Insert: {
+          connected_at?: string | null
           created_at?: string
           external_account_id?: string | null
           id?: string
@@ -170,10 +179,12 @@ export type Database = {
           mode?: Database["public"]["Enums"]["collection_mode"]
           platform: Database["public"]["Enums"]["platform"]
           profile_id?: string | null
+          session_id?: string | null
           updated_at?: string
           workspace_id: string
         }
         Update: {
+          connected_at?: string | null
           created_at?: string
           external_account_id?: string | null
           id?: string
@@ -181,6 +192,7 @@ export type Database = {
           mode?: Database["public"]["Enums"]["collection_mode"]
           platform?: Database["public"]["Enums"]["platform"]
           profile_id?: string | null
+          session_id?: string | null
           updated_at?: string
           workspace_id?: string
         }
