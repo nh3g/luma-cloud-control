@@ -81,7 +81,7 @@ export function ColetaNavegador() {
       salvar({
         data: {
           plataforma: p,
-          modo: valor(p).modo as "DEMO" | "API" | "BROWSER",
+          modo: valor(p).modo as "DEMO" | "API" | "BROWSER" | "IMPORT",
           conta: valor(p).conta,
           dias: valor(p).dias as 7 | 14 | 30,
         },
@@ -100,7 +100,7 @@ export function ColetaNavegador() {
       await salvar({
         data: {
           plataforma: p,
-          modo: atual.modo as "DEMO" | "API" | "BROWSER",
+          modo: atual.modo as "DEMO" | "API" | "BROWSER" | "IMPORT",
           conta: atual.conta,
           dias: atual.dias as 7 | 14 | 30,
         },

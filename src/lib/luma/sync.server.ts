@@ -231,7 +231,7 @@ export async function sincronizarWorkspace(sb: Sb, ws: string): Promise<ResumoSy
     throw new Error("Nenhuma integração conectada. Conecte Meta Ads ou Google Ads para sincronizar.");
   }
 
-  const porNavegador = new Set((coletas ?? []).filter((c) => c.mode === "BROWSER").map((c) => c.platform));
+  const porNavegador = new Set((coletas ?? []).filter((c) => c.mode === "BROWSER" || c.mode === "IMPORT").map((c) => c.platform));
   const demo = workspace?.demo_mode !== false;
   const resumos: ResumoSync[] = [];
 

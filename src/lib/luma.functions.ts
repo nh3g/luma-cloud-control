@@ -669,7 +669,7 @@ export const salvarColetaNavegador = createServerFn({ method: "POST" })
     z
       .object({
         plataforma: plataformaColeta,
-        modo: z.enum(["DEMO", "API", "BROWSER"]),
+        modo: z.enum(["DEMO", "API", "BROWSER", "IMPORT"]),
         conta: z.string().trim().max(120).default(""),
         dias: z.union([z.literal(7), z.literal(14), z.literal(30)]).default(7),
       })
