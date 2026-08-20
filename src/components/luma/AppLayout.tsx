@@ -1,6 +1,8 @@
 import { Link, Outlet, useNavigate } from "@tanstack/react-router";
 import {
+  BarChart3,
   Bot,
+
   Brain,
   ClipboardCheck,
   LayoutDashboard,
