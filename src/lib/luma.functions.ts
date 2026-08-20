@@ -398,15 +398,25 @@ export const alternarPreferenciaWorkspace = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const ws = await obterWorkspaceId(context.supabase);
     if (data.campo === "demo_mode" && data.valor === false) {
-      const { count } = await context.supabase
-        .from("integrations")
-        .select("id", { count: "exact", head: true })
-        .eq("workspace_id", ws)
-        .eq("status", "CONNECTED");
-      if (!count) {
-        throw new Error("Conecte uma conta real antes de sair do modo demonstração.");
+      const [{ count }, { count: navegador }] = await Promise.all([
+        context.supabase
+          .from("integrations")
+          .select("id", { count: "exact", head: true })
+          .eq("workspace_id", ws)
+          .eq("status", "CONNECTED"),
+        context.supabase
+          .from("browser_collections")
+          .select("id", { count: "exact", head: true })
+          .eq("workspace_id", ws)
+          .eq("mode", "BROWSER"),
+      ]);
+      if (!count && !navegador) {
+        throw new Error(
+          "Antes de sair do modo demonstração, conecte uma conta pela API oficial ou configure a coleta por navegador em Integrações.",
+        );
       }
     }
+
     const { error } = await context.supabase
       .from("workspaces")
       .update(data.campo === "demo_mode" ? { demo_mode: data.valor } : { auto_sync_enabled: data.valor })
