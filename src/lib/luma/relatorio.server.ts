@@ -80,7 +80,12 @@ function somar(t: Totais, s: Record<string, unknown>): Totais {
 function orcamento(valor: unknown): number | null {
   if (!valor || typeof valor !== "object") return null;
   const registro = valor as Record<string, unknown>;
-  const bruto = registro['budget_daily'] ?? registro['budget'] ?? registro['daily_budget'];
+  const bruto =
+    registro['budgetDaily'] ??
+    registro['budget_daily'] ??
+    registro['budget'] ??
+    registro['daily_budget'];
+
   if (bruto === undefined || bruto === null) return null;
   const numero = Number(bruto);
   return Number.isFinite(numero) ? numero : null;
