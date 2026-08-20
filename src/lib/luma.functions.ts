@@ -346,7 +346,7 @@ export const alternarPreferenciaWorkspace = createServerFn({ method: "POST" })
     }
     const { error } = await context.supabase
       .from("workspaces")
-      .update({ [data.campo]: data.valor })
+      .update(data.campo === "demo_mode" ? { demo_mode: data.valor } : { auto_sync_enabled: data.valor })
       .eq("id", ws);
     if (error) throw new Error(error.message);
     return { ok: true };
