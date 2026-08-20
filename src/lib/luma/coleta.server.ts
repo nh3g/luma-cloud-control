@@ -103,7 +103,11 @@ export async function dispararColeta(sb: Sb, ws: string, plataforma: Plataforma)
     .select("agent_stopped, ai_model")
     .eq("id", ws)
     .maybeSingle();
-  if (workspace?.agent_stopped) throw new Error("O agente está parado. Reative o agente para coletar.");
+  if (workspace?.agent_stopped) {
+    throw new Error(
+      'O agente está parado. Clique em "PARAR AGENTE" no topo da tela para reativá-lo e tente coletar de novo.',
+    );
+  }
 
   const { data: config } = await sb
     .from("browser_collections")
@@ -134,7 +138,9 @@ export async function dispararColeta(sb: Sb, ws: string, plataforma: Plataforma)
     conta: config.external_account_id ?? "",
     dias: config.lookback_days,
     perfilId,
-    modelo: workspace?.ai_model || "gpt-4.1",
+    // O navegador na nuvem só aceita os modelos do próprio serviço (o modelo da
+    // estrategista é da OpenAI e não vale aqui).
+    modelo: process.env["BROWSER_USE_MODEL"] || "browser-use-2.0",
   });
 
   const { data: run, error } = await sb

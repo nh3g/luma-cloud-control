@@ -55,11 +55,16 @@ async function pedir<T>(caminho: string, init?: RequestInit): Promise<T> {
       (json as { detail?: string; message?: string } | null)?.detail ??
       (json as { message?: string } | null)?.message ??
       texto.slice(0, 300);
-    if (resposta.status === 401 || resposta.status === 403) {
+    if (resposta.status === 401) {
       throw new Error("A chave do serviço de navegador é inválida ou expirou.");
     }
+    if (resposta.status === 403) {
+      throw new Error(detalhe || "O serviço de navegador recusou a solicitação.");
+    }
     if (resposta.status === 402) {
-      throw new Error("A conta do serviço de navegador está sem créditos.");
+      throw new Error(
+        `A conta do serviço de navegador está sem créditos.${detalhe ? ` (${detalhe})` : ""}`,
+      );
     }
     throw new Error(`Serviço de navegador respondeu ${resposta.status}: ${detalhe}`);
   }
