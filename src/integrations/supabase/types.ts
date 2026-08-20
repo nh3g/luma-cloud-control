@@ -104,6 +104,7 @@ export type Database = {
         Row: {
           action_type: string
           current_value: string | null
+          expires_at: string | null
           id: string
           proposed_value: string | null
           reason: string
@@ -119,6 +120,7 @@ export type Database = {
         Insert: {
           action_type: string
           current_value?: string | null
+          expires_at?: string | null
           id?: string
           proposed_value?: string | null
           reason: string
@@ -134,6 +136,7 @@ export type Database = {
         Update: {
           action_type?: string
           current_value?: string | null
+          expires_at?: string | null
           id?: string
           proposed_value?: string | null
           reason?: string
@@ -191,11 +194,13 @@ export type Database = {
       browser_agent_runs: {
         Row: {
           companion_id: string | null
+          complexity: string
           created_at: string
           error_message: string | null
           finished_at: string | null
           id: string
           intent: Json | null
+          max_steps: number
           mode: Database["public"]["Enums"]["browser_agent_mode"]
           model: string
           result_text: string | null
@@ -206,11 +211,13 @@ export type Database = {
         }
         Insert: {
           companion_id?: string | null
+          complexity?: string
           created_at?: string
           error_message?: string | null
           finished_at?: string | null
           id?: string
           intent?: Json | null
+          max_steps?: number
           mode?: Database["public"]["Enums"]["browser_agent_mode"]
           model?: string
           result_text?: string | null
@@ -221,11 +228,13 @@ export type Database = {
         }
         Update: {
           companion_id?: string | null
+          complexity?: string
           created_at?: string
           error_message?: string | null
           finished_at?: string | null
           id?: string
           intent?: Json | null
+          max_steps?: number
           mode?: Database["public"]["Enums"]["browser_agent_mode"]
           model?: string
           result_text?: string | null
@@ -345,6 +354,7 @@ export type Database = {
           name: string
           paired_at: string | null
           pairing_code_hash: string | null
+          pairing_expires_at: string | null
           status: Database["public"]["Enums"]["companion_status"]
           workspace_id: string
         }
@@ -358,6 +368,7 @@ export type Database = {
           name: string
           paired_at?: string | null
           pairing_code_hash?: string | null
+          pairing_expires_at?: string | null
           status?: Database["public"]["Enums"]["companion_status"]
           workspace_id: string
         }
@@ -371,6 +382,7 @@ export type Database = {
           name?: string
           paired_at?: string | null
           pairing_code_hash?: string | null
+          pairing_expires_at?: string | null
           status?: Database["public"]["Enums"]["companion_status"]
           workspace_id?: string
         }
@@ -630,6 +642,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "integrations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mcp_keys: {
+        Row: {
+          created_at: string
+          id: string
+          key_hash: string
+          key_prefix: string
+          label: string
+          last_used_at: string | null
+          revoked_at: string | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key_hash: string
+          key_prefix: string
+          label?: string
+          last_used_at?: string | null
+          revoked_at?: string | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key_hash?: string
+          key_prefix?: string
+          label?: string
+          last_used_at?: string | null
+          revoked_at?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcp_keys_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"

@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-import type { Json } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { obterWorkspaceId } from "./luma.server";
 
@@ -403,181 +402,11 @@ export const executarDecisao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ context, data }) => {
+    const { executarDecisaoAprovada } = await import("./luma/execucao.server");
     const ws = await obterWorkspaceId(context.supabase);
-    const sb = context.supabase;
-
-    const { data: workspace } = await sb
-      .from("workspaces")
-      .select("agent_stopped, demo_mode")
-      .eq("id", ws)
-      .maybeSingle();
-    if (workspace?.agent_stopped) {
-      throw new Error("O agente está parado. Reative o agente para executar decisões.");
-    }
-
-    const { data: decisao, error: erroLeitura } = await sb
-      .from("decisions")
-      .select("*")
-      .eq("id", data.id)
-      .eq("workspace_id", ws)
-      .maybeSingle();
-    if (erroLeitura) throw new Error(erroLeitura.message);
-    if (!decisao) throw new Error("Decisão não encontrada.");
-    if (decisao.status !== "APPROVED") {
-      throw new Error("Somente decisões aprovadas e ainda válidas podem ser executadas.");
-    }
-    if (new Date(decisao.expires_at).getTime() <= Date.now()) {
-      await sb.from("decisions").update({ status: "EXPIRED" }).eq("id", decisao.id).eq("workspace_id", ws);
-      throw new Error("A aprovação expirou antes da execução. Rode uma nova análise.");
-    }
-
-    const canal = "SIMULATED" as const;
-    const endpointBase = decisao.platform === "META" ? "/graph/v20.0" : "/v17/customers";
-    const registrar = async (
-      endpoint: string,
-      method: string,
-      req: Record<string, unknown>,
-      res: Record<string, unknown>,
-      success: boolean,
-      erro?: string,
-    ) => {
-      await sb.from("action_logs").insert({
-        workspace_id: ws,
-        decision_id: decisao.id,
-        platform: decisao.platform,
-        endpoint,
-        method,
-        request_json: req as Json,
-        response_json: res as Json,
-        success,
-        error_message: erro ?? null,
-      });
-    };
-
-    // 1. Reler estado atual e comparar com o valor anterior registrado
-    const { data: campanha } = await sb
-      .from("campaigns")
-      .select("*")
-      .eq("workspace_id", ws)
-      .eq("id", decisao.campaign_id ?? "")
-      .maybeSingle();
-    if (!campanha) throw new Error("Campanha da decisão não foi encontrada na base sincronizada.");
-
-    const anterior = (decisao.previous_value_json ?? {}) as Record<string, unknown>;
-    const proposto = (decisao.proposed_value_json ?? {}) as Record<string, unknown>;
-
-    let divergencia: string | null = null;
-    if (typeof anterior["budgetDaily"] === "number") {
-      const atual = Number(campanha.budget_daily);
-      if (Math.abs(atual - Number(anterior["budgetDaily"])) > 0.009) {
-        divergencia = `O orçamento diário mudou de ${anterior["budgetDaily"]} para ${atual} desde a análise.`;
-      }
-    }
-    if (!divergencia && typeof anterior["status"] === "string" && campanha.status !== anterior["status"]) {
-      divergencia = `O status da campanha mudou de ${anterior["status"]} para ${campanha.status} desde a análise.`;
-    }
-
-    await registrar(
-      `${endpointBase}/${decisao.campaign_id}?fields=status,daily_budget`,
-      "GET",
-      { campaignId: decisao.campaign_id, mode: canal },
-      { status: campanha.status, budgetDaily: Number(campanha.budget_daily) },
-      true,
-    );
-
-    if (divergencia) {
-      await sb
-        .from("decisions")
-        .update({
-          status: "EXPIRED",
-          result_json: { blocked: true, reason: divergencia },
-        })
-        .eq("id", decisao.id)
-        .eq("workspace_id", ws);
-      await registrar(
-        `${endpointBase}/${decisao.campaign_id}`,
-        "POST",
-        { mode: canal },
-        { blocked: true, reason: divergencia },
-        false,
-        divergencia,
-      );
-      return { ok: false, bloqueado: true, motivo: divergencia };
-    }
-
-    // 2. Aplicar a alteração
-    const alteracao: { budget_daily?: number; status?: string } = {};
-    if (typeof proposto["budgetDaily"] === "number") alteracao.budget_daily = proposto["budgetDaily"];
-    if (typeof proposto["status"] === "string") alteracao.status = proposto["status"];
-
-    if (Object.keys(alteracao).length > 0) {
-      const { error } = await sb
-        .from("campaigns")
-        .update(alteracao)
-        .eq("workspace_id", ws)
-        .eq("id", campanha.id);
-      if (error) {
-        await sb
-          .from("decisions")
-          .update({ status: "FAILED", result_json: { error: error.message } })
-          .eq("id", decisao.id)
-          .eq("workspace_id", ws);
-        await registrar(`${endpointBase}/${campanha.id}`, "POST", alteracao, {}, false, error.message);
-        throw new Error(error.message);
-      }
-    }
-
-    await registrar(`${endpointBase}/${campanha.id}`, "POST", { ...alteracao, mode: canal }, { accepted: true }, true);
-
-    // 3. Verificar o estado final na própria origem
-    const { data: final } = await sb
-      .from("campaigns")
-      .select("status, budget_daily")
-      .eq("workspace_id", ws)
-      .eq("id", campanha.id)
-      .maybeSingle();
-
-    const confirmado =
-      final !== null &&
-      final !== undefined &&
-      (typeof proposto["budgetDaily"] !== "number" ||
-        Math.abs(Number(final.budget_daily) - Number(proposto["budgetDaily"])) < 0.009) &&
-      (typeof proposto["status"] !== "string" || final.status === proposto["status"]);
-
-    await registrar(
-      `${endpointBase}/${campanha.id}?fields=status,daily_budget`,
-      "GET",
-      { verificacao: "estado final" },
-      { status: final?.status ?? null, budgetDaily: Number(final?.budget_daily ?? 0), verified: confirmado },
-      confirmado,
-      confirmado ? undefined : "Estado final não confere com o valor proposto.",
-    );
-
-    if (!confirmado) {
-      await sb
-        .from("decisions")
-        .update({
-          status: "FAILED",
-          result_json: { verified: false, reason: "Estado final não confere com o valor proposto." },
-        })
-        .eq("id", decisao.id)
-        .eq("workspace_id", ws);
-      return { ok: false, bloqueado: false, motivo: "A verificação final falhou. Nada foi registrado como sucesso." };
-    }
-
-    await sb
-      .from("decisions")
-      .update({
-        status: "EXECUTED",
-        executed_at: new Date().toISOString(),
-        executed_via: canal,
-        result_json: { verified: true, ...proposto },
-      })
-      .eq("id", decisao.id)
-      .eq("workspace_id", ws);
-
-    return { ok: true, bloqueado: false, motivo: null };
+    return executarDecisaoAprovada(context.supabase, ws, data.id);
   });
+
 
 export const obterDiagnostico = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -623,4 +452,320 @@ export const obterDiagnostico = createServerFn({ method: "GET" })
       integracoes: integracoes.data ?? [],
       companion: companion.data ?? [],
     };
+  });
+
+// ---------------------------------------------------------------------------
+// Fase 6 — Agente de navegador (companion local) e acesso MCP
+// ---------------------------------------------------------------------------
+
+export const listarAgente = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { estaOffline, expirarAprovacoesAgente } = await import("./luma/companion.server");
+    const ws = await obterWorkspaceId(context.supabase);
+    await expirarAprovacoesAgente(context.supabase, ws);
+
+    const [dispositivos, runs, workspace] = await Promise.all([
+      context.supabase
+        .from("companion_devices")
+        .select("*")
+        .eq("workspace_id", ws)
+        .order("created_at", { ascending: false }),
+      context.supabase
+        .from("browser_agent_runs")
+        .select("*")
+        .eq("workspace_id", ws)
+        .order("created_at", { ascending: false })
+        .limit(20),
+      context.supabase.from("workspaces").select("agent_stopped, demo_mode").eq("id", ws).maybeSingle(),
+    ]);
+
+    const ids = (runs.data ?? []).map((r) => r.id);
+    const aprovacoes = ids.length
+      ? (
+          await context.supabase
+            .from("browser_agent_approvals")
+            .select("*")
+            .in("run_id", ids)
+            .order("requested_at", { ascending: false })
+        ).data ?? []
+      : [];
+
+    return {
+      dispositivos: (dispositivos.data ?? []).map((d) => ({
+        ...d,
+        offline: d.status === "OFFLINE" || estaOffline(d.last_heartbeat_at),
+        pareado: Boolean(d.paired_at),
+        aguardandoPareamento: Boolean(d.pairing_expires_at) && !d.paired_at,
+      })),
+      runs: runs.data ?? [],
+      aprovacoes,
+      workspace: workspace.data,
+    };
+  });
+
+export const listarLogsExecucao = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ runId: z.string().uuid() }).parse(input))
+  .handler(async ({ context, data }) => {
+    const ws = await obterWorkspaceId(context.supabase);
+    const { data: run } = await context.supabase
+      .from("browser_agent_runs")
+      .select("*")
+      .eq("workspace_id", ws)
+      .eq("id", data.runId)
+      .maybeSingle();
+    if (!run) throw new Error("Execução não encontrada.");
+    const { data: logs } = await context.supabase
+      .from("browser_agent_logs")
+      .select("*")
+      .eq("run_id", data.runId)
+      .order("created_at", { ascending: true })
+      .limit(500);
+    return { run, logs: logs ?? [] };
+  });
+
+export const criarDispositivo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ nome: z.string().trim().min(2).max(60) }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { criarPareamento } = await import("./luma/companion.server");
+    const ws = await obterWorkspaceId(context.supabase);
+    return criarPareamento(context.supabase, ws, data.nome);
+  });
+
+export const removerDispositivo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ context, data }) => {
+    const ws = await obterWorkspaceId(context.supabase);
+    const { error } = await context.supabase
+      .from("companion_devices")
+      .delete()
+      .eq("workspace_id", ws)
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const iniciarExecucaoAgente = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        tarefa: z.string().trim().min(3).max(1000),
+        modo: z.enum(["ANALYZE", "APPROVAL", "PRIME"]),
+        companionId: z.string().uuid().optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const { roteardorIntencao } = await import("./luma/roteador");
+    const { estaOffline, registrarLog } = await import("./luma/companion.server");
+    const ws = await obterWorkspaceId(context.supabase);
+
+    const { data: workspace } = await context.supabase
+      .from("workspaces")
+      .select("agent_stopped")
+      .eq("id", ws)
+      .maybeSingle();
+    if (workspace?.agent_stopped) {
+      throw new Error("O agente está parado. Reative o agente para iniciar uma execução.");
+    }
+
+    const intencao = roteardorIntencao(data.tarefa, data.modo);
+
+    // Ambiguidade: pede esclarecimento sem abrir navegador nem acionar IA.
+    if (intencao.ambiguo) {
+      return { ok: false, tipo: "AMBIGUO" as const, motivo: intencao.motivo, runId: null };
+    }
+
+    const { data: dispositivos } = await context.supabase
+      .from("companion_devices")
+      .select("id, last_heartbeat_at, paired_at")
+      .eq("workspace_id", ws);
+    const disponivel = (dispositivos ?? []).find(
+      (d) => d.paired_at && (data.companionId ? d.id === data.companionId : !estaOffline(d.last_heartbeat_at)),
+    );
+
+    // Escrita em modo Análise é recusada antes de qualquer passo.
+    if (intencao.escrita && data.modo === "ANALYZE") {
+      const { data: run } = await context.supabase
+        .from("browser_agent_runs")
+        .insert({
+          workspace_id: ws,
+          companion_id: disponivel?.id ?? null,
+          task: data.tarefa,
+          mode: data.modo,
+          intent: JSON.parse(JSON.stringify(intencao)),
+          complexity: intencao.complexidade,
+          max_steps: intencao.maxPassos,
+          status: "MODE_MISMATCH",
+          error_message: "Tarefa de escrita recusada no modo Análise.",
+          finished_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+      if (run) {
+        await registrarLog(
+          context.supabase,
+          run.id,
+          "Escrita bloqueada: o modo Análise só permite navegação e leitura.",
+          "WARN",
+        );
+      }
+      return {
+        ok: false,
+        tipo: "MODE_MISMATCH" as const,
+        motivo: "Esta tarefa altera algo. Use o modo Aprovação para que cada alteração passe pela sua autorização.",
+        runId: run?.id ?? null,
+      };
+    }
+
+    if (!disponivel) {
+      return {
+        ok: false,
+        tipo: "SEM_COMPANION" as const,
+        motivo: "Nenhum dispositivo pareado e online. Pareie o companion na sua máquina para executar tarefas.",
+        runId: null,
+      };
+    }
+
+    const { data: run, error } = await context.supabase
+      .from("browser_agent_runs")
+      .insert({
+        workspace_id: ws,
+        companion_id: disponivel.id,
+        task: data.tarefa,
+        mode: data.modo,
+        intent: JSON.parse(JSON.stringify(intencao)),
+        complexity: intencao.complexidade,
+        max_steps: intencao.maxPassos,
+        status: "STARTING",
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    await registrarLog(context.supabase, run.id, `Tarefa enviada ao companion (limite de ${intencao.maxPassos} passos).`);
+    return { ok: true, tipo: "ENVIADA" as const, motivo: null, runId: run.id };
+  });
+
+export const pararExecucaoAgente = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ runId: z.string().uuid() }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { registrarLog } = await import("./luma/companion.server");
+    const ws = await obterWorkspaceId(context.supabase);
+    const { error } = await context.supabase
+      .from("browser_agent_runs")
+      .update({ status: "STOPPED", finished_at: new Date().toISOString() })
+      .eq("workspace_id", ws)
+      .eq("id", data.runId)
+      .in("status", ["STARTING", "RUNNING", "WAITING_APPROVAL", "NEEDS_INPUT"]);
+    if (error) throw new Error(error.message);
+    await registrarLog(context.supabase, data.runId, "Execução interrompida pelo usuário.", "WARN");
+    return { ok: true };
+  });
+
+export const responderAprovacaoAgente = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        acao: z.enum(["APROVAR", "RECUSAR"]),
+        nota: z.string().max(300).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const { registrarLog } = await import("./luma/companion.server");
+    const ws = await obterWorkspaceId(context.supabase);
+
+    const { data: workspace } = await context.supabase
+      .from("workspaces")
+      .select("agent_stopped")
+      .eq("id", ws)
+      .maybeSingle();
+    if (workspace?.agent_stopped) {
+      throw new Error("O agente está parado. Reative o agente para responder aprovações.");
+    }
+
+    const { data: pedido } = await context.supabase
+      .from("browser_agent_approvals")
+      .select("*, browser_agent_runs!inner(workspace_id)")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (!pedido) throw new Error("Solicitação não encontrada.");
+    if (pedido.status !== "PENDING") throw new Error("Esta solicitação já foi respondida.");
+    if (pedido.expires_at && new Date(pedido.expires_at).getTime() <= Date.now()) {
+      await context.supabase.from("browser_agent_approvals").update({ status: "EXPIRED" }).eq("id", data.id);
+      throw new Error("A solicitação expirou. O agente precisa pedir novamente.");
+    }
+
+    const aprovar = data.acao === "APROVAR";
+    const { error } = await context.supabase
+      .from("browser_agent_approvals")
+      .update({
+        status: aprovar ? "APPROVED" : "REJECTED",
+        responded_at: new Date().toISOString(),
+        response_note: data.nota ?? null,
+      })
+      .eq("id", data.id)
+      .eq("status", "PENDING");
+    if (error) throw new Error(error.message);
+
+    await registrarLog(
+      context.supabase,
+      pedido.run_id,
+      aprovar
+        ? `Aprovação concedida (uso único) para: ${pedido.title}`
+        : `Aprovação recusada para: ${pedido.title}`,
+      aprovar ? "INFO" : "WARN",
+    );
+    return { ok: true, status: aprovar ? "APPROVED" : "REJECTED" };
+  });
+
+export const listarChavesMcp = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const ws = await obterWorkspaceId(context.supabase);
+    const { data } = await context.supabase
+      .from("mcp_keys")
+      .select("id, label, key_prefix, created_at, last_used_at, revoked_at")
+      .eq("workspace_id", ws)
+      .is("revoked_at", null)
+      .order("created_at", { ascending: false });
+    return { chaves: data ?? [] };
+  });
+
+export const gerarChaveMcp = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ label: z.string().trim().min(2).max(40) }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { gerarSegredo, resumo } = await import("./luma/companion.server");
+    const ws = await obterWorkspaceId(context.supabase);
+    const chave = `luma_${gerarSegredo(24)}`;
+    const { error } = await context.supabase.from("mcp_keys").insert({
+      workspace_id: ws,
+      label: data.label,
+      key_hash: await resumo(chave),
+      key_prefix: chave.slice(0, 12),
+    });
+    if (error) throw new Error(error.message);
+    return { chave };
+  });
+
+export const revogarChaveMcp = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ context, data }) => {
+    const ws = await obterWorkspaceId(context.supabase);
+    const { error } = await context.supabase
+      .from("mcp_keys")
+      .update({ revoked_at: new Date().toISOString() })
+      .eq("workspace_id", ws)
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
