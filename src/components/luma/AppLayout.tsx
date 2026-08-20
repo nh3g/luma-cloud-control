@@ -26,8 +26,10 @@ import {
   listarNotas,
   obterConfiguracoes,
   obterDiagnostico,
+  obterRelatorio,
   obterVisaoGeral,
 } from "@/lib/luma.functions";
+
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { AgentStoppedBanner, StopAgentButton } from "./StopAgentButton";
 
