@@ -23,7 +23,7 @@ export function AcessoMcp() {
   const invalidar = () => void queryClient.invalidateQueries({ queryKey: ["chaves-mcp"] });
 
   const mGerar = useMutation({
-    mutationFn: () => gerar({ data: { nome: nome.trim() || "Agente externo" } }),
+    mutationFn: () => gerar({ data: { label: nome.trim() || "Agente externo" } }),
     onSuccess: (r) => {
       setChaveNova(r.chave);
       setNome("");

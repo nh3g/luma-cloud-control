@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { AcessoMcp } from "@/components/luma/AcessoMcp";
 import { obterConfiguracoes, salvarConfiguracoes, salvarPerfil } from "@/lib/luma.functions";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
@@ -192,6 +193,8 @@ function Pagina() {
           </div>
         </div>
       </section>
+
+      <AcessoMcp />
     </div>
   );
 }
