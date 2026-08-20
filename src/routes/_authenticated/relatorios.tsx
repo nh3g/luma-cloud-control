@@ -39,7 +39,7 @@ export const Route = createFileRoute("/_authenticated/relatorios")({
   component: Pagina,
 });
 
-type Periodo = 7 | 14 | 30;
+type Periodo = 7 | 14 | 30 | 0;
 
 function variacao(atual: number, anterior: number) {
   if (anterior <= 0) return null;
@@ -80,7 +80,9 @@ function Pagina() {
         <div>
           <h1 className="text-2xl font-semibold">Relatórios</h1>
           <p className="text-sm text-muted-foreground">
-            Resultado do período e comparativo com os {dias} dias anteriores.
+            {dias === 0
+              ? "Resultado de todo o período disponível, sem comparativo."
+              : `Resultado do período e comparativo com os ${dias} dias anteriores.`}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -89,6 +91,7 @@ function Pagina() {
               <TabsTrigger value="7">7 dias</TabsTrigger>
               <TabsTrigger value="14">14 dias</TabsTrigger>
               <TabsTrigger value="30">30 dias</TabsTrigger>
+              <TabsTrigger value="0">Todo o período</TabsTrigger>
             </TabsList>
           </Tabs>
           <Button variant="outline" onClick={() => void baixar()} disabled={baixando || isLoading}>
