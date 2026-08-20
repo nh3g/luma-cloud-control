@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
-import { Route as AuthenticatedAgenteNavegadorRouteImport } from './routes/_authenticated/agente-navegador'
 import { Route as AuthenticatedCampanhasRouteImport } from './routes/_authenticated/campanhas'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedDecisoesRouteImport } from './routes/_authenticated/decisoes'
@@ -22,7 +21,6 @@ import { Route as AuthenticatedIntegracoesRouteImport } from './routes/_authenti
 import { Route as AuthenticatedNotasRouteImport } from './routes/_authenticated/notas'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
 import { Route as ApiPublicMcpRouteImport } from './routes/api/public/mcp'
-import { Route as ApiPublicCompanionRpcRouteImport } from './routes/api/public/companion/rpc'
 import { Route as ApiPublicCronExecutarRouteImport } from './routes/api/public/cron/executar'
 import { Route as ApiPublicOauthCallbackRouteImport } from './routes/api/public/oauth/callback'
 
@@ -40,12 +38,6 @@ const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAgenteNavegadorRoute =
-  AuthenticatedAgenteNavegadorRouteImport.update({
-    id: '/agente-navegador',
-    path: '/agente-navegador',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedCampanhasRoute = AuthenticatedCampanhasRouteImport.update({
   id: '/campanhas',
   path: '/campanhas',
@@ -95,11 +87,6 @@ const ApiPublicMcpRoute = ApiPublicMcpRouteImport.update({
   path: '/api/public/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicCompanionRpcRoute = ApiPublicCompanionRpcRouteImport.update({
-  id: '/api/public/companion/rpc',
-  path: '/api/public/companion/rpc',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiPublicCronExecutarRoute = ApiPublicCronExecutarRouteImport.update({
   id: '/api/public/cron/executar',
   path: '/api/public/cron/executar',
@@ -114,7 +101,6 @@ const ApiPublicOauthCallbackRoute = ApiPublicOauthCallbackRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
-  '/agente-navegador': typeof AuthenticatedAgenteNavegadorRoute
   '/campanhas': typeof AuthenticatedCampanhasRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/decisoes': typeof AuthenticatedDecisoesRoute
@@ -124,13 +110,11 @@ export interface FileRoutesByFullPath {
   '/notas': typeof AuthenticatedNotasRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/api/public/mcp': typeof ApiPublicMcpRoute
-  '/api/public/companion/rpc': typeof ApiPublicCompanionRpcRoute
   '/api/public/cron/executar': typeof ApiPublicCronExecutarRoute
   '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
-  '/agente-navegador': typeof AuthenticatedAgenteNavegadorRoute
   '/campanhas': typeof AuthenticatedCampanhasRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/decisoes': typeof AuthenticatedDecisoesRoute
@@ -141,7 +125,6 @@ export interface FileRoutesByTo {
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/': typeof AuthenticatedIndexRoute
   '/api/public/mcp': typeof ApiPublicMcpRoute
-  '/api/public/companion/rpc': typeof ApiPublicCompanionRpcRoute
   '/api/public/cron/executar': typeof ApiPublicCronExecutarRoute
   '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
 }
@@ -149,7 +132,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/_authenticated/agente-navegador': typeof AuthenticatedAgenteNavegadorRoute
   '/_authenticated/campanhas': typeof AuthenticatedCampanhasRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/decisoes': typeof AuthenticatedDecisoesRoute
@@ -160,7 +142,6 @@ export interface FileRoutesById {
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/api/public/mcp': typeof ApiPublicMcpRoute
-  '/api/public/companion/rpc': typeof ApiPublicCompanionRpcRoute
   '/api/public/cron/executar': typeof ApiPublicCronExecutarRoute
   '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
 }
@@ -169,7 +150,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
-    | '/agente-navegador'
     | '/campanhas'
     | '/configuracoes'
     | '/decisoes'
@@ -179,13 +159,11 @@ export interface FileRouteTypes {
     | '/notas'
     | '/relatorios'
     | '/api/public/mcp'
-    | '/api/public/companion/rpc'
     | '/api/public/cron/executar'
     | '/api/public/oauth/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
-    | '/agente-navegador'
     | '/campanhas'
     | '/configuracoes'
     | '/decisoes'
@@ -196,14 +174,12 @@ export interface FileRouteTypes {
     | '/relatorios'
     | '/'
     | '/api/public/mcp'
-    | '/api/public/companion/rpc'
     | '/api/public/cron/executar'
     | '/api/public/oauth/callback'
   id:
     | '__root__'
     | '/_authenticated'
     | '/auth'
-    | '/_authenticated/agente-navegador'
     | '/_authenticated/campanhas'
     | '/_authenticated/configuracoes'
     | '/_authenticated/decisoes'
@@ -214,7 +190,6 @@ export interface FileRouteTypes {
     | '/_authenticated/relatorios'
     | '/_authenticated/'
     | '/api/public/mcp'
-    | '/api/public/companion/rpc'
     | '/api/public/cron/executar'
     | '/api/public/oauth/callback'
   fileRoutesById: FileRoutesById
@@ -223,7 +198,6 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiPublicMcpRoute: typeof ApiPublicMcpRoute
-  ApiPublicCompanionRpcRoute: typeof ApiPublicCompanionRpcRoute
   ApiPublicCronExecutarRoute: typeof ApiPublicCronExecutarRoute
   ApiPublicOauthCallbackRoute: typeof ApiPublicOauthCallbackRoute
 }
@@ -249,13 +223,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/agente-navegador': {
-      id: '/_authenticated/agente-navegador'
-      path: '/agente-navegador'
-      fullPath: '/agente-navegador'
-      preLoaderRoute: typeof AuthenticatedAgenteNavegadorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/campanhas': {
@@ -321,13 +288,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMcpRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/companion/rpc': {
-      id: '/api/public/companion/rpc'
-      path: '/api/public/companion/rpc'
-      fullPath: '/api/public/companion/rpc'
-      preLoaderRoute: typeof ApiPublicCompanionRpcRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/cron/executar': {
       id: '/api/public/cron/executar'
       path: '/api/public/cron/executar'
@@ -346,7 +306,6 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAgenteNavegadorRoute: typeof AuthenticatedAgenteNavegadorRoute
   AuthenticatedCampanhasRoute: typeof AuthenticatedCampanhasRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedDecisoesRoute: typeof AuthenticatedDecisoesRoute
@@ -359,7 +318,6 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAgenteNavegadorRoute: AuthenticatedAgenteNavegadorRoute,
   AuthenticatedCampanhasRoute: AuthenticatedCampanhasRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedDecisoesRoute: AuthenticatedDecisoesRoute,
@@ -378,7 +336,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiPublicMcpRoute: ApiPublicMcpRoute,
-  ApiPublicCompanionRpcRoute: ApiPublicCompanionRpcRoute,
   ApiPublicCronExecutarRoute: ApiPublicCronExecutarRoute,
   ApiPublicOauthCallbackRoute: ApiPublicOauthCallbackRoute,
 }

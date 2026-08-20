@@ -7,7 +7,6 @@ import {
   formatarDataHora,
   formatarRelativo,
   rotuloPlataforma,
-  rotuloStatusCompanion,
   rotuloStatusDecisao,
   rotuloStatusIntegracao,
   rotuloStatusSync,
@@ -132,19 +131,6 @@ function Pagina() {
                 </div>
               ))
             )}
-            <div className="pt-2">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Companion</p>
-              {data.companion.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhum dispositivo pareado.</p>
-              ) : (
-                data.companion.map((c) => (
-                  <div key={c.id} className="flex items-center justify-between text-sm">
-                    <span>{c.name}</span>
-                    <Badge variant="secondary">{rotuloStatusCompanion[c.status] ?? c.status}</Badge>
-                  </div>
-                ))
-              )}
-            </div>
           </CardContent>
         </Card>
 

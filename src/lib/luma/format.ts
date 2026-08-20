@@ -109,14 +109,6 @@ export const rotuloStatusSync: Record<string, string> = {
   FAILED: "Falhou",
 };
 
-export const rotuloStatusCompanion: Record<string, string> = {
-  OFFLINE: "Offline",
-  ONLINE: "Online",
-  BUSY: "Ocupado",
-  STOPPED: "Parado",
-  ERROR: "Erro",
-};
-
 export const rotuloStatusCampanha: Record<string, string> = {
   ACTIVE: "Ativa",
   PAUSED: "Pausada",

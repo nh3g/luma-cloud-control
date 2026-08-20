@@ -100,166 +100,6 @@ export type Database = {
           },
         ]
       }
-      browser_agent_approvals: {
-        Row: {
-          action_type: string
-          current_value: string | null
-          expires_at: string | null
-          id: string
-          proposed_value: string | null
-          reason: string
-          requested_at: string
-          responded_at: string | null
-          response_note: string | null
-          risk_level: Database["public"]["Enums"]["risk_level"]
-          run_id: string
-          status: Database["public"]["Enums"]["browser_approval_status"]
-          target: string | null
-          title: string
-        }
-        Insert: {
-          action_type: string
-          current_value?: string | null
-          expires_at?: string | null
-          id?: string
-          proposed_value?: string | null
-          reason: string
-          requested_at?: string
-          responded_at?: string | null
-          response_note?: string | null
-          risk_level?: Database["public"]["Enums"]["risk_level"]
-          run_id: string
-          status?: Database["public"]["Enums"]["browser_approval_status"]
-          target?: string | null
-          title: string
-        }
-        Update: {
-          action_type?: string
-          current_value?: string | null
-          expires_at?: string | null
-          id?: string
-          proposed_value?: string | null
-          reason?: string
-          requested_at?: string
-          responded_at?: string | null
-          response_note?: string | null
-          risk_level?: Database["public"]["Enums"]["risk_level"]
-          run_id?: string
-          status?: Database["public"]["Enums"]["browser_approval_status"]
-          target?: string | null
-          title?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "browser_agent_approvals_run_id_fkey"
-            columns: ["run_id"]
-            isOneToOne: false
-            referencedRelation: "browser_agent_runs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      browser_agent_logs: {
-        Row: {
-          created_at: string
-          id: string
-          level: string
-          message: string
-          run_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          level?: string
-          message: string
-          run_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          level?: string
-          message?: string
-          run_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "browser_agent_logs_run_id_fkey"
-            columns: ["run_id"]
-            isOneToOne: false
-            referencedRelation: "browser_agent_runs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      browser_agent_runs: {
-        Row: {
-          companion_id: string | null
-          complexity: string
-          created_at: string
-          error_message: string | null
-          finished_at: string | null
-          id: string
-          intent: Json | null
-          max_steps: number
-          mode: Database["public"]["Enums"]["browser_agent_mode"]
-          model: string
-          result_text: string | null
-          started_at: string | null
-          status: Database["public"]["Enums"]["browser_agent_run_status"]
-          task: string
-          workspace_id: string
-        }
-        Insert: {
-          companion_id?: string | null
-          complexity?: string
-          created_at?: string
-          error_message?: string | null
-          finished_at?: string | null
-          id?: string
-          intent?: Json | null
-          max_steps?: number
-          mode?: Database["public"]["Enums"]["browser_agent_mode"]
-          model?: string
-          result_text?: string | null
-          started_at?: string | null
-          status?: Database["public"]["Enums"]["browser_agent_run_status"]
-          task: string
-          workspace_id: string
-        }
-        Update: {
-          companion_id?: string | null
-          complexity?: string
-          created_at?: string
-          error_message?: string | null
-          finished_at?: string | null
-          id?: string
-          intent?: Json | null
-          max_steps?: number
-          mode?: Database["public"]["Enums"]["browser_agent_mode"]
-          model?: string
-          result_text?: string | null
-          started_at?: string | null
-          status?: Database["public"]["Enums"]["browser_agent_run_status"]
-          task?: string
-          workspace_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "browser_agent_runs_companion_id_fkey"
-            columns: ["companion_id"]
-            isOneToOne: false
-            referencedRelation: "companion_devices"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "browser_agent_runs_workspace_id_fkey"
-            columns: ["workspace_id"]
-            isOneToOne: false
-            referencedRelation: "workspaces"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       campaigns: {
         Row: {
           account_id: string
@@ -336,59 +176,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "campaigns_workspace_id_fkey"
-            columns: ["workspace_id"]
-            isOneToOne: false
-            referencedRelation: "workspaces"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      companion_devices: {
-        Row: {
-          app_version: string | null
-          browser_label: string | null
-          created_at: string
-          device_token_hash: string | null
-          id: string
-          last_heartbeat_at: string | null
-          name: string
-          paired_at: string | null
-          pairing_code_hash: string | null
-          pairing_expires_at: string | null
-          status: Database["public"]["Enums"]["companion_status"]
-          workspace_id: string
-        }
-        Insert: {
-          app_version?: string | null
-          browser_label?: string | null
-          created_at?: string
-          device_token_hash?: string | null
-          id?: string
-          last_heartbeat_at?: string | null
-          name: string
-          paired_at?: string | null
-          pairing_code_hash?: string | null
-          pairing_expires_at?: string | null
-          status?: Database["public"]["Enums"]["companion_status"]
-          workspace_id: string
-        }
-        Update: {
-          app_version?: string | null
-          browser_label?: string | null
-          created_at?: string
-          device_token_hash?: string | null
-          id?: string
-          last_heartbeat_at?: string | null
-          name?: string
-          paired_at?: string | null
-          pairing_code_hash?: string | null
-          pairing_expires_at?: string | null
-          status?: Database["public"]["Enums"]["companion_status"]
-          workspace_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "companion_devices_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -961,25 +748,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      is_browser_run_owner: { Args: { _run_id: string }; Returns: boolean }
       is_workspace_owner: { Args: { _workspace_id: string }; Returns: boolean }
       seed_demo_workspace: { Args: { _ws: string }; Returns: undefined }
     }
     Enums: {
-      browser_agent_mode: "ANALYZE" | "APPROVAL" | "PRIME"
-      browser_agent_run_status:
-        | "STARTING"
-        | "RUNNING"
-        | "WAITING_APPROVAL"
-        | "COMPLETED"
-        | "PARTIAL"
-        | "BLOCKED"
-        | "NEEDS_INPUT"
-        | "MODE_MISMATCH"
-        | "FAILED"
-        | "STOPPED"
-      browser_approval_status: "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED"
-      companion_status: "OFFLINE" | "ONLINE" | "BUSY" | "STOPPED" | "ERROR"
       decision_action_type:
         | "PAUSE_CAMPAIGN"
         | "RESUME_CAMPAIGN"
@@ -1126,21 +898,6 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      browser_agent_mode: ["ANALYZE", "APPROVAL", "PRIME"],
-      browser_agent_run_status: [
-        "STARTING",
-        "RUNNING",
-        "WAITING_APPROVAL",
-        "COMPLETED",
-        "PARTIAL",
-        "BLOCKED",
-        "NEEDS_INPUT",
-        "MODE_MISMATCH",
-        "FAILED",
-        "STOPPED",
-      ],
-      browser_approval_status: ["PENDING", "APPROVED", "REJECTED", "EXPIRED"],
-      companion_status: ["OFFLINE", "ONLINE", "BUSY", "STOPPED", "ERROR"],
       decision_action_type: [
         "PAUSE_CAMPAIGN",
         "RESUME_CAMPAIGN",
