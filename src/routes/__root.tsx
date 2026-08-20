@@ -77,15 +77,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "LUMA — Gestão semi-autônoma de tráfego pago" },
+      {
+        name: "description",
+        content:
+          "LUMA v3: gestão de Meta Ads e Google Ads com motor de regras determinístico e aprovação humana.",
+      },
+      { name: "author", content: "LUMA" },
+      { property: "og:title", content: "LUMA — Gestão semi-autônoma de tráfego pago" },
+      {
+        property: "og:description",
+        content:
+          "Decisões automáticas propostas, aprovadas por você e executadas com verificação de estado.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
+
     links: [
       {
         rel: "stylesheet",
