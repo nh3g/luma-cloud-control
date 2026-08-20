@@ -135,7 +135,7 @@ function Pagina() {
 
   return (
     <div className="space-y-6">
-      <TourBoasVindas />
+      {workspace && !workspace.onboarding_completed ? <TourBoasVindas /> : null}
 
       <header>
         <h1 className="text-2xl font-semibold">Visão Geral</h1>
