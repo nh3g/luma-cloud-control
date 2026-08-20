@@ -50,6 +50,8 @@ export function ColetaNavegador() {
   const carregar = useServerFn(obterColetaNavegador);
   const salvar = useServerFn(salvarColetaNavegador);
   const iniciar = useServerFn(iniciarColetaNavegador);
+  const conectar = useServerFn(conectarContaNavegador);
+  const desconectar = useServerFn(desconectarContaNavegador);
   const acompanhar = useServerFn(acompanharColetaNavegador);
   const parar = useServerFn(pararColetaNavegador);
   const queryClient = useQueryClient();
@@ -75,7 +77,11 @@ export function ColetaNavegador() {
     return mapa;
   }, [data]);
 
+  const conexao = (p: Plataforma) =>
+    (data?.configuracoes ?? []).find((c) => c.platform === p)?.connected_at ?? null;
+
   const valor = (p: Plataforma) => rascunho[p] ?? configuracoes[p] ?? { modo: "DEMO", conta: "", dias: 7 };
+
   const alterar = (p: Plataforma, campo: "modo" | "conta" | "dias", v: string | number) =>
     setRascunho((atual) => ({ ...atual, [p]: { ...valor(p), [campo]: v } }));
 
