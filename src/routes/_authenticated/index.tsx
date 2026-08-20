@@ -183,48 +183,76 @@ function Pagina() {
             <AreaChart data={serie} margin={{ left: 4, right: 8, top: 8 }}>
               <defs>
                 <linearGradient id="grad-inv" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.5} />
-                  <stop offset="100%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--muted-foreground)" stopOpacity={0.45} />
+                  <stop offset="100%" stopColor="var(--muted-foreground)" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="grad-rec" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.6} />
-                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.55} />
+                  <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-              <XAxis dataKey="dia" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="var(--border)"
+                strokeOpacity={0.6}
+                vertical={false}
+              />
+              <XAxis
+                dataKey="dia"
+                tick={{ fontSize: 12, fill: "var(--foreground)", fillOpacity: 0.75 }}
+                tickLine={{ stroke: "var(--border)" }}
+                axisLine={{ stroke: "var(--border)" }}
+                stroke="var(--border)"
+              />
               <YAxis
-                tick={{ fontSize: 12 }}
-                stroke="hsl(var(--muted-foreground))"
+                tick={{ fontSize: 12, fill: "var(--foreground)", fillOpacity: 0.75 }}
+                tickLine={{ stroke: "var(--border)" }}
+                axisLine={{ stroke: "var(--border)" }}
+                stroke="var(--border)"
                 tickFormatter={(v: number) => formatarNumero(v)}
                 width={70}
               />
               <Tooltip
+                cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
                 contentStyle={{
-                  background: "hsl(var(--card))",
-                  border: "1px solid hsl(var(--border))",
+                  background: "var(--card)",
+                  border: "1px solid var(--border)",
                   borderRadius: 8,
                   fontSize: 12,
+                  color: "var(--foreground)",
+                  boxShadow: "0 10px 30px -12px rgb(0 0 0 / 0.6)",
                 }}
+                labelStyle={{ color: "var(--foreground)", fontWeight: 600, marginBottom: 4 }}
+                itemStyle={{ color: "var(--foreground)" }}
                 formatter={(v: number, nome: string) => [formatarMoeda(v), nome]}
+              />
+              <Legend
+                verticalAlign="top"
+                align="right"
+                height={28}
+                iconType="circle"
+                wrapperStyle={{ fontSize: 12, color: "var(--muted-foreground)" }}
               />
               <Area
                 type="monotone"
                 dataKey="investimento"
                 name="Investimento"
-                stroke="hsl(var(--muted-foreground))"
+                stroke="var(--muted-foreground)"
                 fill="url(#grad-inv)"
                 strokeWidth={2}
+                activeDot={{ r: 4, stroke: "var(--card)", strokeWidth: 2 }}
               />
               <Area
                 type="monotone"
                 dataKey="receita"
                 name="Receita"
-                stroke="hsl(var(--primary))"
+                stroke="var(--primary)"
                 fill="url(#grad-rec)"
                 strokeWidth={2}
+                activeDot={{ r: 4, stroke: "var(--card)", strokeWidth: 2 }}
               />
             </AreaChart>
+
           </ResponsiveContainer>
         </CardContent>
       </Card>
