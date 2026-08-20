@@ -4,7 +4,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 
 import {
   BarChart3,
-  Bot,
 
   Brain,
   ClipboardCheck,
@@ -24,7 +23,6 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 import {
-  listarAgente,
   listarCampanhas,
   listarDecisoes,
   listarIntegracoes,
@@ -44,7 +42,6 @@ const NAV = [
   { to: "/decisoes", label: "Decisões", icon: ClipboardCheck },
   { to: "/relatorios", label: "Relatórios", icon: BarChart3 },
   { to: "/estrategista", label: "Estrategista", icon: Brain },
-  { to: "/agente-navegador", label: "Agente de Navegador", icon: Bot },
   { to: "/integracoes", label: "Integrações", icon: Plug },
   { to: "/notas", label: "Notas", icon: NotebookPen },
   { to: "/configuracoes", label: "Configurações", icon: Settings },
@@ -57,7 +54,6 @@ const PRE_CARGA: Record<string, { chave: unknown[]; buscar: () => Promise<unknow
   "/campanhas": { chave: ["campanhas"], buscar: () => listarCampanhas() },
   "/decisoes": { chave: ["decisoes"], buscar: () => listarDecisoes() },
   "/relatorios": { chave: ["relatorio", 7], buscar: () => obterRelatorio({ data: { dias: 7 } }) },
-  "/agente-navegador": { chave: ["agente"], buscar: () => listarAgente() },
   "/integracoes": { chave: ["integracoes"], buscar: () => listarIntegracoes() },
   "/notas": { chave: ["notas"], buscar: () => listarNotas() },
   "/configuracoes": { chave: ["configuracoes"], buscar: () => obterConfiguracoes() },

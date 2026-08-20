@@ -463,7 +463,7 @@ export const obterDiagnostico = createServerFn({ method: "GET" })
     const ws = await obterWorkspaceId(context.supabase);
     await expirarDecisoesVencidas(context.supabase, ws);
 
-    const [workspace, settings, decisoes, logs, syncs, integracoes, companion] = await Promise.all([
+    const [workspace, settings, decisoes, logs, syncs, integracoes] = await Promise.all([
       context.supabase.from("workspaces").select("*").eq("id", ws).maybeSingle(),
       context.supabase.from("engine_settings").select("*").eq("workspace_id", ws).maybeSingle(),
       context.supabase.from("decisions").select("status, created_at").eq("workspace_id", ws),
@@ -480,7 +480,6 @@ export const obterDiagnostico = createServerFn({ method: "GET" })
         .order("started_at", { ascending: false })
         .limit(5),
       context.supabase.from("integrations").select("*").eq("workspace_id", ws),
-      context.supabase.from("companion_devices").select("*").eq("workspace_id", ws),
     ]);
 
     const contagem: Record<string, number> = {};
@@ -498,281 +497,12 @@ export const obterDiagnostico = createServerFn({ method: "GET" })
       logs: logs.data ?? [],
       syncs: syncs.data ?? [],
       integracoes: integracoes.data ?? [],
-      companion: companion.data ?? [],
     };
   });
 
 // ---------------------------------------------------------------------------
-// Fase 6 — Agente de navegador (companion local) e acesso MCP
+// Acesso MCP (assistentes externos)
 // ---------------------------------------------------------------------------
-
-export const listarAgente = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { estaOffline, expirarAprovacoesAgente } = await import("./luma/companion.server");
-    const ws = await obterWorkspaceId(context.supabase);
-    await expirarAprovacoesAgente(context.supabase, ws);
-
-    const [dispositivos, runs, workspace] = await Promise.all([
-      context.supabase
-        .from("companion_devices")
-        .select("*")
-        .eq("workspace_id", ws)
-        .order("created_at", { ascending: false }),
-      context.supabase
-        .from("browser_agent_runs")
-        .select("*")
-        .eq("workspace_id", ws)
-        .order("created_at", { ascending: false })
-        .limit(20),
-      context.supabase.from("workspaces").select("agent_stopped, demo_mode").eq("id", ws).maybeSingle(),
-    ]);
-
-    const ids = (runs.data ?? []).map((r) => r.id);
-    const aprovacoes = ids.length
-      ? (
-          await context.supabase
-            .from("browser_agent_approvals")
-            .select("*")
-            .in("run_id", ids)
-            .order("requested_at", { ascending: false })
-        ).data ?? []
-      : [];
-
-    return {
-      dispositivos: (dispositivos.data ?? []).map((d) => ({
-        ...d,
-        offline: d.status === "OFFLINE" || estaOffline(d.last_heartbeat_at),
-        pareado: Boolean(d.paired_at),
-        aguardandoPareamento: Boolean(d.pairing_expires_at) && !d.paired_at,
-      })),
-      runs: runs.data ?? [],
-      aprovacoes,
-      workspace: workspace.data,
-    };
-  });
-
-export const listarLogsExecucao = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ runId: z.string().uuid() }).parse(input))
-  .handler(async ({ context, data }) => {
-    const ws = await obterWorkspaceId(context.supabase);
-    const { data: run } = await context.supabase
-      .from("browser_agent_runs")
-      .select("*")
-      .eq("workspace_id", ws)
-      .eq("id", data.runId)
-      .maybeSingle();
-    if (!run) throw new Error("Execução não encontrada.");
-    const { data: logs } = await context.supabase
-      .from("browser_agent_logs")
-      .select("*")
-      .eq("run_id", data.runId)
-      .order("created_at", { ascending: true })
-      .limit(500);
-    return { run, logs: logs ?? [] };
-  });
-
-export const criarDispositivo = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ nome: z.string().trim().min(2).max(60) }).parse(input))
-  .handler(async ({ context, data }) => {
-    const { criarPareamento } = await import("./luma/companion.server");
-    const ws = await obterWorkspaceId(context.supabase);
-    return criarPareamento(context.supabase, ws, data.nome);
-  });
-
-export const removerDispositivo = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
-  .handler(async ({ context, data }) => {
-    const ws = await obterWorkspaceId(context.supabase);
-    const { error } = await context.supabase
-      .from("companion_devices")
-      .delete()
-      .eq("workspace_id", ws)
-      .eq("id", data.id);
-    if (error) throw new Error(error.message);
-    return { ok: true };
-  });
-
-export const iniciarExecucaoAgente = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
-    z
-      .object({
-        tarefa: z.string().trim().min(3).max(1000),
-        modo: z.enum(["ANALYZE", "APPROVAL", "PRIME"]),
-        companionId: z.string().uuid().optional(),
-      })
-      .parse(input),
-  )
-  .handler(async ({ context, data }) => {
-    const { roteardorIntencao } = await import("./luma/roteador");
-    const { estaOffline, registrarLog } = await import("./luma/companion.server");
-    const ws = await obterWorkspaceId(context.supabase);
-
-    const { data: workspace } = await context.supabase
-      .from("workspaces")
-      .select("agent_stopped")
-      .eq("id", ws)
-      .maybeSingle();
-    if (workspace?.agent_stopped) {
-      throw new Error("O agente está parado. Reative o agente para iniciar uma execução.");
-    }
-
-    const intencao = roteardorIntencao(data.tarefa, data.modo);
-
-    // Ambiguidade: pede esclarecimento sem abrir navegador nem acionar IA.
-    if (intencao.ambiguo) {
-      return { ok: false, tipo: "AMBIGUO" as const, motivo: intencao.motivo, runId: null };
-    }
-
-    const { data: dispositivos } = await context.supabase
-      .from("companion_devices")
-      .select("id, last_heartbeat_at, paired_at")
-      .eq("workspace_id", ws);
-    const disponivel = (dispositivos ?? []).find(
-      (d) => d.paired_at && (data.companionId ? d.id === data.companionId : !estaOffline(d.last_heartbeat_at)),
-    );
-
-    // Escrita em modo Análise é recusada antes de qualquer passo.
-    if (intencao.escrita && data.modo === "ANALYZE") {
-      const { data: run } = await context.supabase
-        .from("browser_agent_runs")
-        .insert({
-          workspace_id: ws,
-          companion_id: disponivel?.id ?? null,
-          task: data.tarefa,
-          mode: data.modo,
-          intent: JSON.parse(JSON.stringify(intencao)),
-          complexity: intencao.complexidade,
-          max_steps: intencao.maxPassos,
-          status: "MODE_MISMATCH",
-          error_message: "Tarefa de escrita recusada no modo Análise.",
-          finished_at: new Date().toISOString(),
-        })
-        .select("id")
-        .single();
-      if (run) {
-        await registrarLog(
-          context.supabase,
-          run.id,
-          "Escrita bloqueada: o modo Análise só permite navegação e leitura.",
-          "WARN",
-        );
-      }
-      return {
-        ok: false,
-        tipo: "MODE_MISMATCH" as const,
-        motivo: "Esta tarefa altera algo. Use o modo Aprovação para que cada alteração passe pela sua autorização.",
-        runId: run?.id ?? null,
-      };
-    }
-
-    if (!disponivel) {
-      return {
-        ok: false,
-        tipo: "SEM_COMPANION" as const,
-        motivo: "Nenhum dispositivo pareado e online. Pareie o companion na sua máquina para executar tarefas.",
-        runId: null,
-      };
-    }
-
-    const { data: run, error } = await context.supabase
-      .from("browser_agent_runs")
-      .insert({
-        workspace_id: ws,
-        companion_id: disponivel.id,
-        task: data.tarefa,
-        mode: data.modo,
-        intent: JSON.parse(JSON.stringify(intencao)),
-        complexity: intencao.complexidade,
-        max_steps: intencao.maxPassos,
-        status: "STARTING",
-      })
-      .select("id")
-      .single();
-    if (error) throw new Error(error.message);
-    await registrarLog(context.supabase, run.id, `Tarefa enviada ao companion (limite de ${intencao.maxPassos} passos).`);
-    return { ok: true, tipo: "ENVIADA" as const, motivo: null, runId: run.id };
-  });
-
-export const pararExecucaoAgente = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ runId: z.string().uuid() }).parse(input))
-  .handler(async ({ context, data }) => {
-    const { registrarLog } = await import("./luma/companion.server");
-    const ws = await obterWorkspaceId(context.supabase);
-    const { error } = await context.supabase
-      .from("browser_agent_runs")
-      .update({ status: "STOPPED", finished_at: new Date().toISOString() })
-      .eq("workspace_id", ws)
-      .eq("id", data.runId)
-      .in("status", ["STARTING", "RUNNING", "WAITING_APPROVAL", "NEEDS_INPUT"]);
-    if (error) throw new Error(error.message);
-    await registrarLog(context.supabase, data.runId, "Execução interrompida pelo usuário.", "WARN");
-    return { ok: true };
-  });
-
-export const responderAprovacaoAgente = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
-    z
-      .object({
-        id: z.string().uuid(),
-        acao: z.enum(["APROVAR", "RECUSAR"]),
-        nota: z.string().max(300).optional(),
-      })
-      .parse(input),
-  )
-  .handler(async ({ context, data }) => {
-    const { registrarLog } = await import("./luma/companion.server");
-    const ws = await obterWorkspaceId(context.supabase);
-
-    const { data: workspace } = await context.supabase
-      .from("workspaces")
-      .select("agent_stopped")
-      .eq("id", ws)
-      .maybeSingle();
-    if (workspace?.agent_stopped) {
-      throw new Error("O agente está parado. Reative o agente para responder aprovações.");
-    }
-
-    const { data: pedido } = await context.supabase
-      .from("browser_agent_approvals")
-      .select("*, browser_agent_runs!inner(workspace_id)")
-      .eq("id", data.id)
-      .maybeSingle();
-    if (!pedido) throw new Error("Solicitação não encontrada.");
-    if (pedido.status !== "PENDING") throw new Error("Esta solicitação já foi respondida.");
-    if (pedido.expires_at && new Date(pedido.expires_at).getTime() <= Date.now()) {
-      await context.supabase.from("browser_agent_approvals").update({ status: "EXPIRED" }).eq("id", data.id);
-      throw new Error("A solicitação expirou. O agente precisa pedir novamente.");
-    }
-
-    const aprovar = data.acao === "APROVAR";
-    const { error } = await context.supabase
-      .from("browser_agent_approvals")
-      .update({
-        status: aprovar ? "APPROVED" : "REJECTED",
-        responded_at: new Date().toISOString(),
-        response_note: data.nota ?? null,
-      })
-      .eq("id", data.id)
-      .eq("status", "PENDING");
-    if (error) throw new Error(error.message);
-
-    await registrarLog(
-      context.supabase,
-      pedido.run_id,
-      aprovar
-        ? `Aprovação concedida (uso único) para: ${pedido.title}`
-        : `Aprovação recusada para: ${pedido.title}`,
-      aprovar ? "INFO" : "WARN",
-    );
-    return { ok: true, status: aprovar ? "APPROVED" : "REJECTED" };
-  });
 
 export const listarChavesMcp = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -791,7 +521,7 @@ export const gerarChaveMcp = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ label: z.string().trim().min(2).max(40) }).parse(input))
   .handler(async ({ context, data }) => {
-    const { gerarSegredo, resumo } = await import("./luma/companion.server");
+    const { gerarSegredo, resumo } = await import("./luma/cripto.server");
     const ws = await obterWorkspaceId(context.supabase);
     const chave = `luma_${gerarSegredo(24)}`;
     const { error } = await context.supabase.from("mcp_keys").insert({

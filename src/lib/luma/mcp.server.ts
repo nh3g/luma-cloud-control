@@ -2,7 +2,7 @@ import type { Sb } from "../luma.server";
 import { expirarDecisoesVencidas } from "../luma.server";
 import { analisarWorkspace } from "./analise.server";
 import { sincronizarWorkspace } from "./sync.server";
-import { resumo } from "./companion.server";
+import { resumo } from "./cripto.server";
 
 /**
  * Ferramentas MCP da LUMA. Agentes externos podem ler e propor,
