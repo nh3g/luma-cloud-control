@@ -20,6 +20,7 @@ import { Route as AuthenticatedDiagnosticoRouteImport } from './routes/_authenti
 import { Route as AuthenticatedEstrategistaRouteImport } from './routes/_authenticated/estrategista'
 import { Route as AuthenticatedIntegracoesRouteImport } from './routes/_authenticated/integracoes'
 import { Route as AuthenticatedNotasRouteImport } from './routes/_authenticated/notas'
+import { Route as ApiPublicCronExecutarRouteImport } from './routes/api/public/cron/executar'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -80,6 +81,11 @@ const AuthenticatedNotasRoute = AuthenticatedNotasRouteImport.update({
   path: '/notas',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicCronExecutarRoute = ApiPublicCronExecutarRouteImport.update({
+  id: '/api/public/cron/executar',
+  path: '/api/public/cron/executar',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/estrategista': typeof AuthenticatedEstrategistaRoute
   '/integracoes': typeof AuthenticatedIntegracoesRoute
   '/notas': typeof AuthenticatedNotasRoute
+  '/api/public/cron/executar': typeof ApiPublicCronExecutarRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/integracoes': typeof AuthenticatedIntegracoesRoute
   '/notas': typeof AuthenticatedNotasRoute
   '/': typeof AuthenticatedIndexRoute
+  '/api/public/cron/executar': typeof ApiPublicCronExecutarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -118,6 +126,7 @@ export interface FileRoutesById {
   '/_authenticated/integracoes': typeof AuthenticatedIntegracoesRoute
   '/_authenticated/notas': typeof AuthenticatedNotasRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/api/public/cron/executar': typeof ApiPublicCronExecutarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -132,6 +141,7 @@ export interface FileRouteTypes {
     | '/estrategista'
     | '/integracoes'
     | '/notas'
+    | '/api/public/cron/executar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -144,6 +154,7 @@ export interface FileRouteTypes {
     | '/integracoes'
     | '/notas'
     | '/'
+    | '/api/public/cron/executar'
   id:
     | '__root__'
     | '/_authenticated'
@@ -157,11 +168,13 @@ export interface FileRouteTypes {
     | '/_authenticated/integracoes'
     | '/_authenticated/notas'
     | '/_authenticated/'
+    | '/api/public/cron/executar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicCronExecutarRoute: typeof ApiPublicCronExecutarRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -243,6 +256,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNotasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/cron/executar': {
+      id: '/api/public/cron/executar'
+      path: '/api/public/cron/executar'
+      fullPath: '/api/public/cron/executar'
+      preLoaderRoute: typeof ApiPublicCronExecutarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -276,6 +296,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicCronExecutarRoute: ApiPublicCronExecutarRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
