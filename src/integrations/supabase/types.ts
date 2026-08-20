@@ -879,7 +879,7 @@ export type Database = {
     }
     Enums: {
       browser_run_status: "RUNNING" | "FINISHED" | "FAILED" | "STOPPED"
-      collection_mode: "DEMO" | "API" | "BROWSER"
+      collection_mode: "DEMO" | "API" | "BROWSER" | "IMPORT"
       decision_action_type:
         | "PAUSE_CAMPAIGN"
         | "RESUME_CAMPAIGN"
@@ -1027,7 +1027,7 @@ export const Constants = {
   public: {
     Enums: {
       browser_run_status: ["RUNNING", "FINISHED", "FAILED", "STOPPED"],
-      collection_mode: ["DEMO", "API", "BROWSER"],
+      collection_mode: ["DEMO", "API", "BROWSER", "IMPORT"],
       decision_action_type: [
         "PAUSE_CAMPAIGN",
         "RESUME_CAMPAIGN",

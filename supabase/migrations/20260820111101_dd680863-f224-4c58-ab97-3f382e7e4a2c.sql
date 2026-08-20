@@ -1,0 +1,1 @@
+ALTER TYPE public.collection_mode ADD VALUE IF NOT EXISTS 'IMPORT';
