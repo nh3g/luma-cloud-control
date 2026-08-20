@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { AlertTriangle, CheckCircle2, Link2, Plug, RefreshCw, Unplug } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ChavesPlataforma } from "@/components/luma/ChavesPlataforma";
 import { Switch } from "@/components/ui/switch";
 import {
   formatarDataHora,
@@ -125,6 +126,7 @@ function Pagina() {
   }
 
   const demo = data.workspace?.demo_mode !== false;
+  const temContaConectada = data.integracoes.some((i) => i.status === "CONNECTED");
 
   return (
     <div className="space-y-6 p-6">
@@ -146,9 +148,15 @@ function Pagina() {
             <p className="text-sm text-muted-foreground">
               Com o modo ligado, nada é enviado às contas reais: métricas e execuções são simuladas.
             </p>
+            {demo && !temContaConectada && (
+              <p className="mt-2 text-xs text-amber-400">
+                Para desligar o modo demonstração, conecte primeiro uma conta real abaixo.
+              </p>
+            )}
           </div>
           <Switch
             checked={demo}
+            disabled={mPreferencia.isPending || (demo && !temContaConectada)}
             onCheckedChange={(valor) => mPreferencia.mutate({ campo: "demo_mode", valor })}
             aria-label="Alternar modo demonstração"
           />
@@ -163,6 +171,7 @@ function Pagina() {
           </div>
           <Switch
             checked={data.workspace?.auto_sync_enabled !== false}
+            disabled={mPreferencia.isPending}
             onCheckedChange={(valor) => mPreferencia.mutate({ campo: "auto_sync_enabled", valor })}
             aria-label="Alternar sincronização automática"
           />
@@ -173,7 +182,7 @@ function Pagina() {
         {plataformas.map((p) => {
           const integracao = data.integracoes.find((i) => i.platform === p.chave);
           const conectado = integracao?.status === "CONNECTED";
-          const temCredenciais = data.credenciais[p.chave];
+          const temCredenciais = data.credenciais[p.chave]?.configurada === true;
           return (
             <article key={p.chave} className="space-y-3 rounded-xl border border-border bg-card p-5">
               <div className="flex items-start justify-between gap-3">
@@ -210,12 +219,7 @@ function Pagina() {
                 </p>
               )}
 
-              {!temCredenciais && (
-                <p className="rounded-md border border-border bg-muted/30 p-2 text-xs text-muted-foreground">
-                  Para conectar a conta real, cadastre {p.chaves} nas chaves do projeto. Sem isso, a plataforma
-                  funciona apenas em modo demonstração.
-                </p>
-              )}
+              <ChavesPlataforma plataforma={p.chave} situacao={data.credenciais[p.chave]} />
 
               <div className="flex flex-wrap gap-2">
                 <Button
