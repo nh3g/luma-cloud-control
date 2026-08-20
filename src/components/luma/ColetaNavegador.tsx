@@ -178,13 +178,11 @@ export function ColetaNavegador() {
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <Label htmlFor={`conta-${p}`}>
-                    {p === "META" ? "ID da conta (act_...)" : "ID do cliente (123-456-7890)"}
-                  </Label>
+                  <Label htmlFor={`conta-${p}`}>Conta (opcional)</Label>
                   <Input
                     id={`conta-${p}`}
                     value={atual.conta}
-                    placeholder={p === "META" ? "act_123456789" : "123-456-7890"}
+                    placeholder={p === "META" ? "Ex.: Loja Verão ou 123456789" : "Ex.: Loja Verão ou 123-456-7890"}
                     onChange={(e) => alterar(p, "conta", e.target.value)}
                   />
                 </div>
@@ -203,6 +201,11 @@ export function ColetaNavegador() {
                 </div>
               </div>
 
+              <p className="text-xs text-muted-foreground">
+                O navegador usa a conta em que você já está logado. Preencha só se o seu login tiver várias contas de
+                anúncio e você quiser fixar uma — pode ser o nome ou o número da conta.
+              </p>
+
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" onClick={() => mSalvar.mutate(p)} disabled={mSalvar.isPending}>
                   Salvar configuração
@@ -214,19 +217,26 @@ export function ColetaNavegador() {
                 ) : (
                   <Button
                     size="sm"
-                    onClick={() => mIniciar.mutate(p)}
-                    disabled={
-                      mIniciar.isPending || atual.modo !== "BROWSER" || configuracoes[p]?.modo !== "BROWSER" || !data?.servicoConfigurado
-                    }
+                    onClick={() => {
+                      if (atual.modo !== "BROWSER") {
+                        toast.error('Escolha a origem "Navegador na nuvem" para coletar por navegador.');
+                        return;
+                      }
+                      mIniciar.mutate(p);
+                    }}
+                    disabled={mIniciar.isPending || !data?.servicoConfigurado}
                   >
                     <Play className="mr-2 h-4 w-4" /> Coletar agora
                   </Button>
                 )}
               </div>
 
-              {atual.modo === "BROWSER" && configuracoes[p]?.modo !== "BROWSER" && (
-                <p className="text-xs text-muted-foreground">Salve a configuração para liberar a coleta.</p>
+              {!data?.servicoConfigurado && (
+                <p className="text-xs text-muted-foreground">
+                  A coleta fica disponível assim que o serviço de navegador estiver configurado no projeto.
+                </p>
               )}
+
 
               {rodando && (
                 <div className="rounded-md border border-primary/40 bg-primary/10 p-3 text-xs">
