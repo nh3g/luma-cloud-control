@@ -55,7 +55,9 @@ export const listarCampanhas = createServerFn({ method: "GET" })
 export const listarDecisoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    const { expirarDecisoesVencidas } = await import("./luma.server");
     const ws = await obterWorkspaceId(context.supabase);
+    await expirarDecisoesVencidas(context.supabase, ws);
     const { data, error } = await context.supabase
       .from("decisions")
       .select("*")
