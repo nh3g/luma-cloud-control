@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, Outlet, useNavigate } from "@tanstack/react-router";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
@@ -72,6 +72,20 @@ export function AppLayout() {
     if (!alvo) return;
     void queryClient.prefetchQuery({ queryKey: alvo.chave, queryFn: alvo.buscar, staleTime: 60_000 });
   };
+
+  // Adianta os dados de todas as páginas logo após o primeiro render.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      for (const alvo of Object.values(PRE_CARGA)) {
+        void queryClient.prefetchQuery({
+          queryKey: alvo.chave,
+          queryFn: alvo.buscar,
+          staleTime: 60_000,
+        });
+      }
+    }, 400);
+    return () => clearTimeout(id);
+  }, [queryClient]);
 
   const sair = async () => {
     await supabase.auth.signOut();
