@@ -138,6 +138,19 @@ function urlInicial(plataforma: "META" | "GOOGLE_ADS", conta: string) {
 }
 
 
+/** Endereço da janela ao vivo da sessão (para a pessoa fazer login). */
+export async function obterSessao(chave: string, sessionId: string): Promise<string | null> {
+  try {
+    const s = await pedir<{ liveUrl?: string; publicShareUrl?: string; live_url?: string }>(
+      chave,
+      `/sessions/${encodeURIComponent(sessionId)}`,
+    );
+    return s?.liveUrl ?? s?.live_url ?? s?.publicShareUrl ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** Cria (ou reaproveita) um perfil de navegador para manter o login salvo. */
 export async function garantirPerfil(chave: string, perfilAtual: string | null): Promise<string> {
   if (perfilAtual) return perfilAtual;
@@ -150,6 +163,70 @@ export async function garantirPerfil(chave: string, perfilAtual: string | null):
   return id;
 }
 
+/** Apaga o perfil salvo (usado ao desconectar a conta). */
+export async function excluirPerfil(chave: string, perfilId: string): Promise<void> {
+  try {
+    await pedir(chave, `/profiles/${encodeURIComponent(perfilId)}`, { method: "DELETE" });
+  } catch {
+    /* o perfil pode já ter sido removido no serviço */
+  }
+}
+
+type RespostaTarefa = {
+  id?: string;
+  taskId?: string;
+  sessionId?: string;
+  session?: { id?: string; liveUrl?: string };
+  liveUrl?: string;
+};
+
+async function criarTarefa(
+  chave: string,
+  corpo: Record<string, unknown>,
+): Promise<{ taskId: string; sessionId: string | null; liveUrl: string | null }> {
+  const criada = await pedir<RespostaTarefa>(chave, "/tasks", { method: "POST", body: JSON.stringify(corpo) });
+  const taskId = criada?.id ?? criada?.taskId;
+  if (!taskId) throw new Error("O serviço de navegador não devolveu o identificador da tarefa.");
+  const sessionId = criada?.sessionId ?? criada?.session?.id ?? null;
+  let liveUrl = criada?.session?.liveUrl ?? criada?.liveUrl ?? null;
+  if (!liveUrl && sessionId) liveUrl = await obterSessao(chave, sessionId);
+  return { taskId, sessionId, liveUrl };
+}
+
+/**
+ * Abre uma sessão para a pessoa entrar na conta (Meta/Google). O agente só
+ * espera o login acontecer e confirma que o painel carregou — nada é lido nem
+ * alterado aqui. O login fica salvo no perfil do serviço.
+ */
+export async function iniciarLogin(entrada: {
+  chave: string;
+  plataforma: "META" | "GOOGLE_ADS";
+  perfilId: string;
+  modelo: string;
+}): Promise<{ taskId: string; sessionId: string | null; liveUrl: string | null }> {
+  const alvo =
+    entrada.plataforma === "META"
+      ? "o Gerenciador de Anúncios da Meta (adsmanager.facebook.com)"
+      : "o Google Ads (ads.google.com)";
+  const task = [
+    `Abra ${alvo} e verifique se a sessão já está logada.`,
+    "Se aparecer tela de login, NÃO tente digitar e-mail nem senha: a pessoa vai entrar manualmente pela janela ao vivo.",
+    "Apenas espere, recarregando a página de tempos em tempos, até que a lista de campanhas/painel apareça logado.",
+    "Quando o painel logado carregar, finalize a tarefa respondendo apenas: LOGADO.",
+    "Não altere nenhuma configuração, campanha ou orçamento.",
+  ].join(" ");
+  return criarTarefa(entrada.chave, {
+    task,
+    llm: entrada.modelo,
+    startUrl:
+      entrada.plataforma === "META"
+        ? "https://adsmanager.facebook.com/adsmanager/manage/campaigns"
+        : "https://ads.google.com/aw/campaigns",
+    profileId: entrada.perfilId,
+    maxSteps: 40,
+  });
+}
+
 /** Dispara a coleta e devolve o identificador da tarefa na nuvem. */
 export async function iniciarColeta(entrada: {
   chave: string;
@@ -158,26 +235,17 @@ export async function iniciarColeta(entrada: {
   dias: number;
   perfilId: string;
   modelo: string;
-}): Promise<{ taskId: string; liveUrl: string | null }> {
-  const criada = await pedir<{ id?: string; taskId?: string; sessionId?: string; session?: { liveUrl?: string }; liveUrl?: string }>(
-    entrada.chave,
-    "/tasks",
-    {
-      method: "POST",
-      body: JSON.stringify({
-        task: instrucao(entrada.plataforma, entrada.conta, entrada.dias),
-        llm: entrada.modelo,
-        startUrl: urlInicial(entrada.plataforma, entrada.conta),
-        profileId: entrada.perfilId,
-        maxSteps: 60,
-        structuredOutput: JSON.stringify(esquemaSaida),
-      }),
-    },
-  );
-  const taskId = criada?.id ?? criada?.taskId;
-  if (!taskId) throw new Error("O serviço de navegador não devolveu o identificador da tarefa.");
-  return { taskId, liveUrl: criada?.session?.liveUrl ?? criada?.liveUrl ?? null };
+}): Promise<{ taskId: string; sessionId: string | null; liveUrl: string | null }> {
+  return criarTarefa(entrada.chave, {
+    task: instrucao(entrada.plataforma, entrada.conta, entrada.dias),
+    llm: entrada.modelo,
+    startUrl: urlInicial(entrada.plataforma, entrada.conta),
+    profileId: entrada.perfilId,
+    maxSteps: 60,
+    structuredOutput: JSON.stringify(esquemaSaida),
+  });
 }
+
 
 function normalizarStatus(bruto: string | undefined): StatusTarefa {
   const s = (bruto ?? "").toLowerCase();
