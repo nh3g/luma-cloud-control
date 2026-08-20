@@ -1,5 +1,6 @@
 import type { Sb } from "../luma.server";
 import { executarFerramenta, ferramentas } from "./mcp.server";
+import { chamarIa, MODELO_PADRAO, type MensagemChat } from "./ia.server";
 
 /**
  * Estrategista de tráfego pago da LUMA.
@@ -8,8 +9,6 @@ import { executarFerramenta, ferramentas } from "./mcp.server";
  * de aprovação humana.
  */
 
-const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-export const MODELO_PADRAO = "google/gemini-2.5-flash";
 const MAX_VOLTAS = 5;
 
 /** Ferramentas liberadas para a IA: leitura + proposta. Aprovar e executar ficam de fora. */
@@ -20,12 +19,7 @@ const PERMITIDAS = new Set([
   "ads_propose_action",
 ]);
 
-export type MensagemChat = {
-  role: "system" | "user" | "assistant" | "tool";
-  content: string;
-  tool_call_id?: string;
-  tool_calls?: { id: string; type: "function"; function: { name: string; arguments: string } }[];
-};
+export type { MensagemChat };
 
 export type ModoEstrategista = "RAPIDO" | "PRIME";
 
