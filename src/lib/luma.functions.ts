@@ -364,6 +364,24 @@ export const removerCredenciaisPlataforma = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Verifica com o provedor se as chaves do app cadastradas realmente funcionam. */
+export const testarCredenciaisPlataforma = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ plataforma: z.enum(["META", "GOOGLE_ADS"]) }).parse(input))
+  .handler(async ({ context, data }) => {
+    const ws = await obterWorkspaceId(context.supabase);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { obterCredenciais } = await import("./luma/credenciais.server");
+    const credenciais = await obterCredenciais(supabaseAdmin, ws, data.plataforma);
+    if (!credenciais) {
+      return { ok: false, mensagem: "Cadastre as chaves do app antes de testar." };
+    }
+    const { testarCredenciais } = await import("./luma/teste-credenciais.server");
+    return testarCredenciais(data.plataforma, credenciais);
+  });
+
+
+
 export const sincronizarAgora = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
