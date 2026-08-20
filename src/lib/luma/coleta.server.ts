@@ -4,8 +4,22 @@
  * campanhas lidas no banco quando a coleta termina.
  */
 import type { Sb } from "../luma.server";
-import { consultarColeta, garantirPerfil, iniciarColeta, pararColeta } from "./browser.server";
+import {
+  consultarColeta,
+  excluirPerfil,
+  garantirPerfil,
+  iniciarColeta,
+  iniciarLogin,
+  pararColeta,
+} from "./browser.server";
 import { gravarCampanhas } from "./sync.server";
+
+/** Modelo do serviço de navegador (a OpenAI da estrategista não vale aqui). */
+const MODELO_NAVEGADOR = () => process.env["BROWSER_USE_MODEL"] || "browser-use-2.0";
+
+/** Tempo máximo de cada tipo de sessão, em minutos. */
+const LIMITE_MIN = { LOGIN: 10, COLLECT: 15 } as const;
+
 
 export type Plataforma = "META" | "GOOGLE_ADS";
 
