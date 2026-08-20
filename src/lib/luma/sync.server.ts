@@ -114,9 +114,12 @@ async function buscarMeta(token: string, accountId: string): Promise<CampanhaExt
   });
 }
 
-async function buscarGoogle(token: string, accountId: string): Promise<CampanhaExterna[]> {
-  const developerToken = process.env["GOOGLE_ADS_DEVELOPER_TOKEN"];
-  if (!developerToken) throw new Error("Token de desenvolvedor do Google Ads não configurado.");
+async function buscarGoogle(
+  token: string,
+  accountId: string,
+  developerToken: string | undefined,
+): Promise<CampanhaExterna[]> {
+  if (!developerToken) throw new Error("Token de desenvolvedor do Google Ads não cadastrado em Integrações.");
   const customerId = accountId.replace(/\D/g, "");
   const consulta = `
     SELECT campaign.id, campaign.name, campaign.status, campaign.advertising_channel_type,
@@ -259,7 +262,12 @@ export async function sincronizarWorkspace(sb: Sb, ws: string): Promise<ResumoSy
         campanhas =
           integracao.platform === "META"
             ? await buscarMeta(token.access_token, integracao.account_id ?? "")
-            : await buscarGoogle(token.access_token, integracao.account_id ?? "");
+            : await buscarGoogle(
+                token.access_token,
+                integracao.account_id ?? "",
+                (await (await import("./credenciais.server")).obterCredenciais(supabaseAdmin, ws, "GOOGLE_ADS"))
+                  ?.developerToken,
+              );
       }
 
       const total = await gravarCampanhas(sb, ws, integracao.platform, integracao.account_id ?? "", campanhas);
