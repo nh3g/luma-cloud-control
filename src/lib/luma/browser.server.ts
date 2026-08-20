@@ -207,24 +207,29 @@ export async function iniciarLogin(entrada: {
   perfilId: string;
   modelo: string;
 }): Promise<{ taskId: string; sessionId: string | null; liveUrl: string | null }> {
-  const alvo =
-    entrada.plataforma === "META"
-      ? "o Gerenciador de Anúncios da Meta (adsmanager.facebook.com)"
-      : "o Google Ads (ads.google.com)";
-  const task = [
-    `Abra ${alvo} e verifique se a sessão já está logada.`,
-    "Se aparecer tela de login, NÃO tente digitar e-mail nem senha: a pessoa vai entrar manualmente pela janela ao vivo.",
-    "Apenas espere, recarregando a página de tempos em tempos, até que a lista de campanhas/painel apareça logado.",
-    "Quando o painel logado carregar, finalize a tarefa respondendo apenas: LOGADO.",
-    "Não altere nenhuma configuração, campanha ou orçamento.",
-  ].join(" ");
+  const meta = entrada.plataforma === "META";
+  const task = (
+    meta
+      ? [
+          `Você começa em ${URL_META}, a página do Gerenciador de Anúncios da Meta.`,
+          "Clique no botão de acesso ao Gerenciador de Anúncios para abrir o painel.",
+          "Se aparecer tela de login, NÃO digite e-mail nem senha: a pessoa vai entrar manualmente pela janela ao vivo.",
+          "Apenas espere, recarregando de tempos em tempos, até o painel de campanhas aparecer logado.",
+          "Quando o painel logado carregar, finalize a tarefa respondendo apenas: LOGADO.",
+          "Não altere nenhuma configuração, campanha ou orçamento.",
+        ]
+      : [
+          "Abra o Google Ads (ads.google.com) e verifique se a sessão já está logada.",
+          "Se aparecer tela de login, NÃO digite e-mail nem senha: a pessoa vai entrar manualmente pela janela ao vivo.",
+          "Apenas espere, recarregando de tempos em tempos, até a lista de campanhas aparecer logada.",
+          "Quando o painel logado carregar, finalize a tarefa respondendo apenas: LOGADO.",
+          "Não altere nenhuma configuração, campanha ou orçamento.",
+        ]
+  ).join(" ");
   return criarTarefa(entrada.chave, {
     task,
     llm: entrada.modelo,
-    startUrl:
-      entrada.plataforma === "META"
-        ? "https://adsmanager.facebook.com/adsmanager/manage/campaigns"
-        : "https://ads.google.com/aw/campaigns",
+    startUrl: urlInicial(entrada.plataforma),
     profileId: entrada.perfilId,
     maxSteps: 40,
   });
