@@ -131,9 +131,6 @@ function Pagina() {
                 </div>
               ))
             )}
-                ))
-              )}
-            </div>
           </CardContent>
         </Card>
 
