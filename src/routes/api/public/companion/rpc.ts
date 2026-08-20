@@ -26,9 +26,9 @@ export const Route = createFileRoute("/api/public/companion/rpc")({
           // Pareamento: única ação sem token de dispositivo.
           if (acao === "parear") {
             const resultado = await companion.trocarCodigoPorToken(supabaseAdmin, String(corpo["codigo"] ?? ""), {
-              appVersion: corpo["appVersion"] ? String(corpo["appVersion"]) : undefined,
-              browserLabel: corpo["browserLabel"] ? String(corpo["browserLabel"]) : undefined,
-              nome: corpo["nome"] ? String(corpo["nome"]) : undefined,
+              ...(corpo["appVersion"] ? { appVersion: String(corpo["appVersion"]) } : {}),
+              ...(corpo["browserLabel"] ? { browserLabel: String(corpo["browserLabel"]) } : {}),
+              ...(corpo["nome"] ? { nome: String(corpo["nome"]) } : {}),
             });
             return Response.json(resultado);
           }
@@ -45,8 +45,8 @@ export const Route = createFileRoute("/api/public/companion/rpc")({
                 .update({
                   status: parado ? "STOPPED" : ((corpo["status"] as "ONLINE") ?? "ONLINE"),
                   last_heartbeat_at: new Date().toISOString(),
-                  app_version: corpo["appVersion"] ? String(corpo["appVersion"]) : undefined,
-                  browser_label: corpo["browserLabel"] ? String(corpo["browserLabel"]) : undefined,
+                  ...(corpo["appVersion"] ? { app_version: String(corpo["appVersion"]) } : {}),
+                  ...(corpo["browserLabel"] ? { browser_label: String(corpo["browserLabel"]) } : {}),
                 })
                 .eq("id", dispositivo.id);
               return Response.json({ ok: true, agentStopped: parado });
