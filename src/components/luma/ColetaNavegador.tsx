@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ChaveNavegador } from "@/components/luma/ChaveNavegador";
 import { formatarDataHora } from "@/lib/luma/format";
 import {
   acompanharColetaNavegador,
@@ -236,7 +237,7 @@ export function ColetaNavegador() {
 
               {!data?.servicoConfigurado && (
                 <p className="text-xs text-muted-foreground">
-                  A coleta fica disponível assim que o serviço de navegador estiver configurado no projeto.
+                  A coleta fica disponível assim que a chave do serviço de navegador for cadastrada acima.
                 </p>
               )}
 
