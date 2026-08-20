@@ -68,7 +68,7 @@ export function AppLayout() {
   const adiantar = (destino: string) => {
     const alvo = PRE_CARGA[destino];
     if (!alvo) return;
-    void queryClient.prefetchQuery({ queryKey: [alvo.chave], queryFn: alvo.buscar, staleTime: 60_000 });
+    void queryClient.prefetchQuery({ queryKey: alvo.chave, queryFn: alvo.buscar, staleTime: 60_000 });
   };
 
   const sair = async () => {
