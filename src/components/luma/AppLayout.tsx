@@ -121,6 +121,8 @@ export function AppLayout() {
             {workspace?.demo_mode && (
               <Link
                 to="/integracoes"
+                search={{ conectado: undefined, erro: undefined }}
+
                 title="Dados fictícios. Conecte suas contas para usar dados reais."
                 className="rounded border border-warning/40 bg-warning/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-warning transition-colors hover:bg-warning/20"
               >
