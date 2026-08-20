@@ -28,6 +28,9 @@ import {
 } from "@/lib/luma/format";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TourBoasVindas } from "@/components/luma/TourBoasVindas";
+import { useWorkspace } from "@/hooks/useWorkspace";
+
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -76,10 +79,12 @@ function agregarPorDia(snapshots: Snapshot[]) {
 }
 
 function Pagina() {
+  const { data: workspace } = useWorkspace();
   const { data, isLoading, error } = useQuery({
     queryKey: ["visao-geral"],
     queryFn: () => obterVisaoGeral(),
   });
+
 
   const resumo = useMemo(() => {
     const snaps = (data?.snapshots ?? []) as Snapshot[];
@@ -130,6 +135,8 @@ function Pagina() {
 
   return (
     <div className="space-y-6">
+      {workspace && !workspace.onboarding_completed ? <TourBoasVindas /> : null}
+
       <header>
         <h1 className="text-2xl font-semibold">Visão Geral</h1>
         <p className="text-sm text-muted-foreground">
@@ -147,6 +154,7 @@ function Pagina() {
           única vez e expira — abrir fila de decisões.
         </Link>
       ) : null}
+
 
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

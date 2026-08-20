@@ -21,7 +21,25 @@ export async function expirarDecisoesVencidas(supabase: Sb, workspaceId: string)
     .eq("workspace_id", workspaceId)
     .in("status", ["PENDING", "APPROVED"])
     .lt("expires_at", agora)
-    .select("id");
+    .select("id, platform, action_type, campaign_name, expires_at");
   if (error) throw new Error(error.message);
-  return data?.length ?? 0;
+  if (!data || data.length === 0) return 0;
+
+  // Registra no diagnóstico para que a expiração fique auditável.
+  await supabase.from("action_logs").insert(
+    data.map((d) => ({
+      workspace_id: workspaceId,
+      decision_id: d.id,
+      platform: d.platform,
+      endpoint: "interno:expiracao-automatica",
+      method: "SYSTEM",
+      request_json: { action_type: d.action_type, campaign_name: d.campaign_name },
+      response_json: { expirou_em: d.expires_at },
+      success: true,
+      error_message: "Decisão expirou sem resposta humana.",
+    })),
+  );
+
+  return data.length;
 }
+

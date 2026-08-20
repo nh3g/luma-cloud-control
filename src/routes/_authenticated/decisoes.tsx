@@ -138,6 +138,12 @@ function Pagina() {
 
   const visiveis = listas[aba as keyof typeof listas] ?? listas.TODAS;
 
+  const vencendoEmBreve = listas.PENDING.filter(
+    (d) => new Date(d.expires_at).getTime() - Date.now() <= 3_600_000,
+  ).length;
+
+
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -167,6 +173,23 @@ function Pagina() {
           O agente está parado. Reative o agente na barra superior para aprovar ou recusar decisões.
         </div>
       ) : null}
+
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-3 text-sm">
+        <span className="flex items-center gap-1.5">
+          <Clock className="size-4 text-muted-foreground" />
+          <strong>{listas.PENDING.length}</strong> aguardando você
+        </span>
+        <span className="text-muted-foreground">·</span>
+        <span className={vencendoEmBreve > 0 ? "text-warning" : "text-muted-foreground"}>
+          <strong>{vencendoEmBreve}</strong> vence(m) na próxima hora
+        </span>
+        <span className="text-muted-foreground">·</span>
+        <span className="text-muted-foreground">
+          <strong>{listas.EXPIRED.length}</strong> já expirou(aram) sem resposta
+        </span>
+      </div>
+
+
 
       <Tabs value={aba} onValueChange={setAba}>
         <TabsList>

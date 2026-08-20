@@ -1,6 +1,8 @@
 import { Link, Outlet, useNavigate } from "@tanstack/react-router";
 import {
+  BarChart3,
   Bot,
+
   Brain,
   ClipboardCheck,
   LayoutDashboard,
@@ -24,8 +26,10 @@ import {
   listarNotas,
   obterConfiguracoes,
   obterDiagnostico,
+  obterRelatorio,
   obterVisaoGeral,
 } from "@/lib/luma.functions";
+
 import { useWorkspace } from "@/hooks/useWorkspace";
 import { AgentStoppedBanner, StopAgentButton } from "./StopAgentButton";
 
@@ -33,6 +37,7 @@ const NAV = [
   { to: "/", label: "Visão Geral", icon: LayoutDashboard },
   { to: "/campanhas", label: "Campanhas", icon: Megaphone },
   { to: "/decisoes", label: "Decisões", icon: ClipboardCheck },
+  { to: "/relatorios", label: "Relatórios", icon: BarChart3 },
   { to: "/estrategista", label: "Estrategista", icon: Brain },
   { to: "/agente-navegador", label: "Agente de Navegador", icon: Bot },
   { to: "/integracoes", label: "Integrações", icon: Plug },
@@ -42,16 +47,18 @@ const NAV = [
 ] as const;
 
 /** Dados de cada página, para adiantar a busca assim que o mouse encosta no menu. */
-const PRE_CARGA: Record<string, { chave: string; buscar: () => Promise<unknown> }> = {
-  "/": { chave: "visao-geral", buscar: () => obterVisaoGeral() },
-  "/campanhas": { chave: "campanhas", buscar: () => listarCampanhas() },
-  "/decisoes": { chave: "decisoes", buscar: () => listarDecisoes() },
-  "/agente-navegador": { chave: "agente", buscar: () => listarAgente() },
-  "/integracoes": { chave: "integracoes", buscar: () => listarIntegracoes() },
-  "/notas": { chave: "notas", buscar: () => listarNotas() },
-  "/configuracoes": { chave: "configuracoes", buscar: () => obterConfiguracoes() },
-  "/diagnostico": { chave: "diagnostico", buscar: () => obterDiagnostico() },
+const PRE_CARGA: Record<string, { chave: unknown[]; buscar: () => Promise<unknown> }> = {
+  "/": { chave: ["visao-geral"], buscar: () => obterVisaoGeral() },
+  "/campanhas": { chave: ["campanhas"], buscar: () => listarCampanhas() },
+  "/decisoes": { chave: ["decisoes"], buscar: () => listarDecisoes() },
+  "/relatorios": { chave: ["relatorio", 7], buscar: () => obterRelatorio({ data: { dias: 7 } }) },
+  "/agente-navegador": { chave: ["agente"], buscar: () => listarAgente() },
+  "/integracoes": { chave: ["integracoes"], buscar: () => listarIntegracoes() },
+  "/notas": { chave: ["notas"], buscar: () => listarNotas() },
+  "/configuracoes": { chave: ["configuracoes"], buscar: () => obterConfiguracoes() },
+  "/diagnostico": { chave: ["diagnostico"], buscar: () => obterDiagnostico() },
 };
+
 
 export function AppLayout() {
   const queryClient = useQueryClient();
@@ -61,7 +68,7 @@ export function AppLayout() {
   const adiantar = (destino: string) => {
     const alvo = PRE_CARGA[destino];
     if (!alvo) return;
-    void queryClient.prefetchQuery({ queryKey: [alvo.chave], queryFn: alvo.buscar, staleTime: 60_000 });
+    void queryClient.prefetchQuery({ queryKey: alvo.chave, queryFn: alvo.buscar, staleTime: 60_000 });
   };
 
   const sair = async () => {
@@ -112,10 +119,17 @@ export function AppLayout() {
         <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-4 border-b border-border bg-background/95 px-6 backdrop-blur">
           <div className="flex items-center gap-3">
             {workspace?.demo_mode && (
-              <span className="rounded border border-warning/40 bg-warning/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-warning">
-                Demo
-              </span>
+              <Link
+                to="/integracoes"
+                search={{ conectado: undefined, erro: undefined }}
+
+                title="Dados fictícios. Conecte suas contas para usar dados reais."
+                className="rounded border border-warning/40 bg-warning/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-warning transition-colors hover:bg-warning/20"
+              >
+                Modo demonstração
+              </Link>
             )}
+
             <span className="text-sm font-medium text-foreground">
               {isLoading ? "Carregando…" : (workspace?.name ?? "Workspace")}
             </span>
