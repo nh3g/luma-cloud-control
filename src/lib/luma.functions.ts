@@ -408,11 +408,11 @@ export const alternarPreferenciaWorkspace = createServerFn({ method: "POST" })
           .from("browser_collections")
           .select("id", { count: "exact", head: true })
           .eq("workspace_id", ws)
-          .eq("mode", "BROWSER"),
+          .in("mode", ["BROWSER", "IMPORT"]),
       ]);
       if (!count && !navegador) {
         throw new Error(
-          "Antes de sair do modo demonstração, conecte uma conta pela API oficial ou configure a coleta por navegador em Integrações.",
+          "Antes de sair do modo demonstração, traga dados reais em Integrações: importe um relatório exportado, conecte uma conta pela API oficial ou configure a coleta por navegador.",
         );
       }
     }

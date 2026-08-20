@@ -8,6 +8,7 @@ import { AlertTriangle, CheckCircle2, Link2, Plug, RefreshCw, Unplug } from "luc
 import { Button } from "@/components/ui/button";
 import { ChavesPlataforma } from "@/components/luma/ChavesPlataforma";
 import { ColetaNavegador } from "@/components/luma/ColetaNavegador";
+import { ImportarRelatorio } from "@/components/luma/ImportarRelatorio";
 import { LimpezaDados } from "@/components/luma/LimpezaDados";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -257,6 +258,8 @@ function Pagina() {
           );
         })}
       </section>
+
+      <ImportarRelatorio />
 
       <ColetaNavegador />
 

@@ -31,7 +31,8 @@ const titulos: Record<Plataforma, string> = { META: "Meta Ads", GOOGLE_ADS: "Goo
 const rotuloModo: Record<string, string> = {
   DEMO: "Demonstração (números simulados)",
   API: "API oficial (token conectado)",
-  BROWSER: "Navegador na nuvem (lê o painel)",
+  BROWSER: "Navegador na nuvem (pago por sessão)",
+  IMPORT: "Importar relatório exportado (grátis)",
 };
 
 const rotuloStatus: Record<string, string> = {
@@ -206,7 +207,11 @@ export function ColetaNavegador() {
               </div>
 
               <p className="text-xs text-muted-foreground">
-                O navegador usa a conta em que você já está logado. Preencha só se o seu login tiver várias contas de
+                    <p className="text-xs text-amber-400">
+                Cada coleta por navegador consome créditos pagos do serviço Browser Use. Para não gastar, use a
+                importação de relatório acima ou a API oficial.
+              </p>
+              PLACEHOLDER O navegador usa a conta em que você já está logado. Preencha só se o seu login tiver várias contas de
                 anúncio e você quiser fixar uma — pode ser o nome ou o número da conta.
               </p>
 
