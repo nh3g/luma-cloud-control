@@ -340,12 +340,18 @@ export async function consultarColeta(chave: string, taskId: string, plataforma:
   const sessionId = tarefa?.sessionId ?? tarefa?.session?.id ?? null;
   let liveUrl = tarefa?.session?.liveUrl ?? tarefa?.liveUrl ?? null;
   if (!liveUrl && sessionId && status === "RUNNING") liveUrl = await obterSessao(chave, sessionId);
+  const campanhas =
+    status === "FINISHED" ? converter(tarefa?.output ?? tarefa?.doneOutput ?? null, plataforma) : [];
   return {
     status,
     passo: ultimo?.nextGoal ?? ultimo?.next_goal ?? null,
     liveUrl,
-    erro: tarefa?.error ?? null,
-    campanhas: status === "FINISHED" ? converter(tarefa?.output ?? tarefa?.doneOutput, plataforma) : [],
+    erro:
+      tarefa?.error ??
+      (status === "FINISHED" && campanhas.length === 0
+        ? "A sessão terminou sem devolver a tabela de campanhas. Verifique se o painel estava logado e tente de novo."
+        : null),
+    campanhas,
   };
 }
 
