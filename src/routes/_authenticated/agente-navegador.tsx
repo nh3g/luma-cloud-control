@@ -80,7 +80,7 @@ function Pagina() {
   const [aviso, setAviso] = useState<string | null>(null);
   const [runAberta, setRunAberta] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["agente"],
     queryFn: () => carregar(),
     refetchInterval: 8000,
