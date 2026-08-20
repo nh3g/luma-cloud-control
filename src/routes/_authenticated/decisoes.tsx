@@ -202,10 +202,13 @@ function Pagina() {
         </TabsList>
       </Tabs>
 
-      {isLoading ? (
+      {error ? (
+        <ErroTela erro={error} aoTentarNovamente={() => void refetch()} titulo="Não foi possível carregar as decisões" />
+      ) : isLoading ? (
         <div className="flex items-center gap-2 py-16 text-muted-foreground">
           <Loader2 className="size-4 animate-spin" /> Carregando decisões…
         </div>
+
       ) : visiveis.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-sm text-muted-foreground">
