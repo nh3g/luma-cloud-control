@@ -111,11 +111,14 @@ export function LimpezaDados() {
         descricao={`Serão removidos: ${rotuloEscopo[escopo].toLowerCase()} — ${
           plataforma === "TODAS" ? "todas as plataformas" : plataforma === "META" ? "Meta Ads" : "Google Ads"
         }, ${periodo === 0 ? "campanhas e todo o histórico" : `histórico dos últimos ${periodo} dias`}. Não é possível desfazer.`}
-        onConfirmar={() => mLimpar.mutate()}
+        rotuloConfirmar="Apagar"
+        aoConfirmar={() => mLimpar.mutate()}
       >
-        <Button variant="destructive" size="sm" disabled={mLimpar.isPending}>
-          Apagar dados selecionados
-        </Button>
+        {(abrir) => (
+          <Button variant="destructive" size="sm" onClick={abrir} disabled={mLimpar.isPending}>
+            Apagar dados selecionados
+          </Button>
+        )}
       </ConfirmarAcao>
     </section>
   );
