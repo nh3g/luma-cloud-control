@@ -160,7 +160,7 @@ async function buscarGoogle(
   });
 }
 
-async function gravarCampanhas(
+export async function gravarCampanhas(
   sb: Sb,
   ws: string,
   plataforma: string,
