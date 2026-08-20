@@ -252,9 +252,19 @@ function Pagina() {
                     {d.browser_label ? ` · ${d.browser_label}` : ""}
                   </p>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => mRemover.mutate(d.id)} aria-label="Remover dispositivo">
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <ConfirmarAcao
+                  titulo={`Remover "${d.name}"?`}
+                  descricao="O dispositivo será despareado e precisará de um novo código para voltar a executar tarefas."
+                  rotuloConfirmar="Remover dispositivo"
+                  aoConfirmar={() => mRemover.mutate(d.id)}
+                >
+                  {(abrir) => (
+                    <Button variant="ghost" size="sm" onClick={abrir} aria-label="Remover dispositivo">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </ConfirmarAcao>
+
               </li>
             ))}
           </ul>
