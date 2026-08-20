@@ -7,6 +7,7 @@ import { AlertTriangle, CheckCircle2, Link2, Plug, RefreshCw, Unplug } from "luc
 
 import { Button } from "@/components/ui/button";
 import { ChavesPlataforma } from "@/components/luma/ChavesPlataforma";
+import { ColetaNavegador } from "@/components/luma/ColetaNavegador";
 import { Switch } from "@/components/ui/switch";
 import {
   formatarDataHora,
@@ -251,6 +252,8 @@ function Pagina() {
           );
         })}
       </section>
+
+      <ColetaNavegador />
 
       <section className="rounded-xl border border-border bg-card p-5">
         <h2 className="mb-3 text-lg font-medium">Últimas sincronizações</h2>
