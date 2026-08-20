@@ -7,8 +7,11 @@ import { obterWorkspaceId } from "./luma.server";
 export const obterVisaoGeral = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    const { expirarDecisoesVencidas } = await import("./luma.server");
     const ws = await obterWorkspaceId(context.supabase);
+    await expirarDecisoesVencidas(context.supabase, ws);
     const [campanhas, snapshots, decisoes, syncs, integracoes] = await Promise.all([
+
       context.supabase.from("campaigns").select("*").eq("workspace_id", ws).order("spend", { ascending: false }),
       context.supabase
         .from("metric_snapshots")
