@@ -73,6 +73,20 @@ export function AppLayout() {
     void queryClient.prefetchQuery({ queryKey: alvo.chave, queryFn: alvo.buscar, staleTime: 60_000 });
   };
 
+  // Adianta os dados de todas as páginas logo após o primeiro render.
+  useEffect(() => {
+    const id = setTimeout(() => {
+      for (const alvo of Object.values(PRE_CARGA)) {
+        void queryClient.prefetchQuery({
+          queryKey: alvo.chave,
+          queryFn: alvo.buscar,
+          staleTime: 60_000,
+        });
+      }
+    }, 400);
+    return () => clearTimeout(id);
+  }, [queryClient]);
+
   const sair = async () => {
     await supabase.auth.signOut();
     void navigate({ to: "/auth" });
