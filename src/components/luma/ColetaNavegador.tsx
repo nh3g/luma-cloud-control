@@ -257,54 +257,116 @@ export function ColetaNavegador() {
               </p>
 
 
-              <div className="flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" onClick={() => mSalvar.mutate(p)} disabled={mSalvar.isPending}>
-                  Salvar configuração
-                </Button>
-                {rodando ? (
-                  <Button size="sm" variant="ghost" onClick={() => mParar.mutate(rodando.id)} disabled={mParar.isPending}>
-                    <Square className="mr-2 h-4 w-4" /> Interromper
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      if (atual.modo !== "BROWSER") {
-                        toast.error('Escolha a origem "Navegador na nuvem" para coletar por navegador.');
-                        return;
-                      }
-                      mIniciar.mutate(p);
-                    }}
-                    disabled={mIniciar.isPending || !data?.servicoConfigurado}
-                  >
-                    <Play className="mr-2 h-4 w-4" /> Coletar agora
-                  </Button>
-                )}
-              </div>
+              {(() => {
+                const conectada = conexao(p);
+                const semChave = !data?.servicoConfigurado;
+                const motivo = semChave
+                  ? "Cadastre a chave do serviço de navegador acima."
+                  : atual.modo !== "BROWSER"
+                    ? 'Escolha a origem "Navegador na nuvem" para usar este passo.'
+                    : !conectada
+                      ? 'Conecte a conta primeiro: clique em "Conectar conta" e faça o login na janela ao vivo.'
+                      : null;
+                return (
+                  <>
+                    <p className="text-xs">
+                      {conectada ? (
+                        <span className="inline-flex items-center gap-1 text-primary">
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Conta conectada em {formatarDataHora(conectada)}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">Conta não conectada neste navegador.</span>
+                      )}
+                    </p>
 
-              {!data?.servicoConfigurado && (
-                <p className="text-xs text-muted-foreground">
-                  A coleta fica disponível assim que a chave do serviço de navegador for cadastrada acima.
-                </p>
-              )}
+                    <div className="flex flex-wrap gap-2">
+                      <Button size="sm" variant="outline" onClick={() => mSalvar.mutate(p)} disabled={mSalvar.isPending}>
+                        Salvar configuração
+                      </Button>
 
+                      {rodando ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => mParar.mutate(rodando.id)}
+                          disabled={mParar.isPending}
+                        >
+                          <Square className="mr-2 h-4 w-4" /> Interromper
+                        </Button>
+                      ) : (
+                        <>
+                          {!conectada && (
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                if (atual.modo !== "BROWSER") {
+                                  toast.error('Escolha a origem "Navegador na nuvem" primeiro.');
+                                  return;
+                                }
+                                mConectar.mutate(p);
+                              }}
+                              disabled={mConectar.isPending || semChave}
+                            >
+                              <LogIn className="mr-2 h-4 w-4" /> Conectar conta do {titulos[p]}
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            onClick={() => mIniciar.mutate(p)}
+                            disabled={mIniciar.isPending || Boolean(motivo)}
+                          >
+                            <Play className="mr-2 h-4 w-4" /> Coletar agora
+                          </Button>
+                          {conectada && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => mDesconectar.mutate(p)}
+                              disabled={mDesconectar.isPending}
+                            >
+                              <Unplug className="mr-2 h-4 w-4" /> Desconectar
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    {motivo && !rodando && <p className="text-xs text-muted-foreground">{motivo}</p>}
+                  </>
+                );
+              })()}
 
               {rodando && (
-                <div className="rounded-md border border-primary/40 bg-primary/10 p-3 text-xs">
-                  <p className="font-medium">Coleta em andamento…</p>
+                <div className="space-y-2 rounded-md border border-primary/40 bg-primary/10 p-3 text-xs">
+                  <p className="font-medium">
+                    {rodando.kind === "LOGIN"
+                      ? "Sessão de login aberta — entre na sua conta na janela abaixo."
+                      : "Coleta em andamento…"}
+                  </p>
                   {rodando.step && <p className="text-muted-foreground">Etapa: {rodando.step}</p>}
-                  {rodando.live_url && (
-                    <a
-                      className="mt-1 inline-flex items-center gap-1 text-primary underline"
-                      href={rodando.live_url}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Abrir sessão ao vivo <ExternalLink className="h-3 w-3" />
-                    </a>
+                  {rodando.live_url ? (
+                    <>
+                      <iframe
+                        title={`Sessão ao vivo ${titulos[p]}`}
+                        src={rodando.live_url}
+                        className="h-[420px] w-full rounded-md border border-border bg-background"
+                        allow="clipboard-read; clipboard-write"
+                      />
+                      <a
+                        className="inline-flex items-center gap-1 text-primary underline"
+                        href={rodando.live_url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Abrir em uma nova aba <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground">Preparando a janela ao vivo…</p>
                   )}
                 </div>
               )}
+
             </article>
           );
         })}
