@@ -237,7 +237,11 @@ export async function dispararColeta(sb: Sb, ws: string, plataforma: Plataforma)
 }
 
 
-/** Consulta a nuvem, atualiza o registro e grava as campanhas quando concluir. */
+/**
+ * Consulta a nuvem e atualiza o registro. Em sessões de login, marca a conta
+ * como conectada; em coletas, grava as campanhas lidas. Sessões que passam do
+ * tempo limite viram falha com explicação, em vez de rodar para sempre.
+ */
 export async function acompanharColeta(sb: Sb, ws: string, runId: string) {
   const { data: run } = await sb
     .from("browser_collection_runs")
@@ -248,8 +252,31 @@ export async function acompanharColeta(sb: Sb, ws: string, runId: string) {
   if (!run) throw new Error("Execução de coleta não encontrada.");
   if (run.status !== "RUNNING") return run;
 
+  const login = run.kind === "LOGIN";
   const servico = await chaveDoWorkspace(ws);
   if (!servico) throw new Error("A chave do serviço de navegador não está cadastrada.");
+
+  const minutos = (Date.now() - new Date(run.started_at).getTime()) / 60000;
+  if (minutos > (login ? LIMITE_MIN.LOGIN : LIMITE_MIN.COLLECT)) {
+    try {
+      await pararColeta(servico.chave, run.task_id);
+    } catch {
+      /* pode já ter terminado na nuvem */
+    }
+    const { data } = await sb
+      .from("browser_collection_runs")
+      .update({
+        status: "FAILED",
+        finished_at: new Date().toISOString(),
+        error: login
+          ? "O login não foi concluído a tempo. Clique em Conectar conta de novo e entre pela janela ao vivo."
+          : "A coleta passou do tempo limite. Tente de novo; se a conta pedir login, reconecte primeiro.",
+      })
+      .eq("id", run.id)
+      .select("*")
+      .single();
+    return data ?? run;
+  }
 
   let estado;
   try {
@@ -279,6 +306,26 @@ export async function acompanharColeta(sb: Sb, ws: string, runId: string) {
     error: estado.erro,
   };
 
+  if (login) {
+    if (estado.status === "FINISHED") {
+      atualizacao["finished_at"] = new Date().toISOString();
+      await sb
+        .from("browser_collections")
+        .update({ connected_at: new Date().toISOString() })
+        .eq("workspace_id", ws)
+        .eq("platform", run.platform);
+    } else if (estado.status === "FAILED" || estado.status === "STOPPED") {
+      atualizacao["finished_at"] = new Date().toISOString();
+    }
+    const { data } = await sb
+      .from("browser_collection_runs")
+      .update(atualizacao)
+      .eq("id", run.id)
+      .select("*")
+      .single();
+    return data ?? run;
+  }
+
   if (estado.status === "FINISHED") {
     let total = 0;
     try {
@@ -290,6 +337,7 @@ export async function acompanharColeta(sb: Sb, ws: string, runId: string) {
       atualizacao["error"] = erro instanceof Error ? erro.message : "Falha ao gravar as campanhas coletadas.";
     }
     atualizacao["finished_at"] = new Date().toISOString();
+
     await sb.from("sync_runs").insert({
       workspace_id: ws,
       platform: run.platform,
