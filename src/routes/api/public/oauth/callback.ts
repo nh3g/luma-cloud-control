@@ -21,6 +21,13 @@ export const Route = createFileRoute("/api/public/oauth/callback")({
         await supabaseAdmin.from("oauth_states").delete().eq("state", state);
 
         const redirect = `${url.origin}/api/public/oauth/callback`;
+        const { obterCredenciais } = await import("@/lib/luma/credenciais.server");
+        const credenciais = await obterCredenciais(
+          supabaseAdmin,
+          pedido.workspace_id,
+          pedido.platform as "META" | "GOOGLE_ADS",
+        );
+        if (!credenciais) return Response.redirect(`${destino}?erro=chaves_nao_cadastradas`, 302);
         try {
           let accessToken = "";
           let refreshToken: string | null = null;
@@ -30,8 +37,8 @@ export const Route = createFileRoute("/api/public/oauth/callback")({
 
           if (pedido.platform === "META") {
             const troca = await fetch(
-              `https://graph.facebook.com/v20.0/oauth/access_token?client_id=${process.env["META_APP_ID"]}` +
-                `&client_secret=${process.env["META_APP_SECRET"]}&redirect_uri=${encodeURIComponent(redirect)}&code=${code}`,
+              `https://graph.facebook.com/v20.0/oauth/access_token?client_id=${credenciais.clientId}` +
+                `&client_secret=${credenciais.clientSecret}&redirect_uri=${encodeURIComponent(redirect)}&code=${code}`,
             );
             const corpo = (await troca.json()) as { access_token?: string; expires_in?: number; error?: { message: string } };
             if (!corpo.access_token) throw new Error(corpo.error?.message ?? "Falha ao trocar o código pelo token.");
@@ -50,8 +57,8 @@ export const Route = createFileRoute("/api/public/oauth/callback")({
               headers: { "Content-Type": "application/x-www-form-urlencoded" },
               body: new URLSearchParams({
                 code,
-                client_id: process.env["GOOGLE_ADS_CLIENT_ID"] ?? "",
-                client_secret: process.env["GOOGLE_ADS_CLIENT_SECRET"] ?? "",
+                client_id: credenciais.clientId,
+                client_secret: credenciais.clientSecret,
                 redirect_uri: redirect,
                 grant_type: "authorization_code",
               }),

@@ -829,6 +829,41 @@ export type Database = {
           },
         ]
       }
+      platform_credentials: {
+        Row: {
+          client_id: string
+          client_secret: string
+          developer_token: string | null
+          platform: Database["public"]["Enums"]["platform"]
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          client_id: string
+          client_secret: string
+          developer_token?: string | null
+          platform: Database["public"]["Enums"]["platform"]
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          client_id?: string
+          client_secret?: string
+          developer_token?: string | null
+          platform?: Database["public"]["Enums"]["platform"]
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_credentials_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sync_runs: {
         Row: {
           accounts: number

@@ -285,6 +285,8 @@ export const listarIntegracoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const ws = await obterWorkspaceId(context.supabase);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { situacaoCredenciais: situacao } = await import("./luma/credenciais.server");
     const [integracoes, syncs, workspace, campanhas] = await Promise.all([
       context.supabase.from("integrations").select("*").eq("workspace_id", ws).order("platform"),
       context.supabase
@@ -307,15 +309,56 @@ export const listarIntegracoes = createServerFn({ method: "GET" })
       syncs: syncs.data ?? [],
       workspace: workspace.data,
       contagemCampanhas: contagem,
-      credenciais: {
-        META: Boolean(process.env["META_APP_ID"] && process.env["META_APP_SECRET"]),
-        GOOGLE_ADS: Boolean(
-          process.env["GOOGLE_ADS_CLIENT_ID"] &&
-            process.env["GOOGLE_ADS_CLIENT_SECRET"] &&
-            process.env["GOOGLE_ADS_DEVELOPER_TOKEN"],
-        ),
-      },
+      credenciais: await situacao(supabaseAdmin, ws),
     };
+  });
+
+export const salvarCredenciaisPlataforma = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        plataforma: z.enum(["META", "GOOGLE_ADS"]),
+        clientId: z.string().trim().min(4).max(200),
+        clientSecret: z.string().trim().min(8).max(400),
+        developerToken: z.string().trim().max(200).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const ws = await obterWorkspaceId(context.supabase);
+    if (data.plataforma === "GOOGLE_ADS" && !data.developerToken) {
+      throw new Error("O Google Ads exige também o token de desenvolvedor.");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("platform_credentials").upsert(
+      {
+        workspace_id: ws,
+        platform: data.plataforma,
+        client_id: data.clientId,
+        client_secret: data.clientSecret,
+        developer_token: data.developerToken ?? null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "workspace_id,platform" },
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const removerCredenciaisPlataforma = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ plataforma: z.enum(["META", "GOOGLE_ADS"]) }).parse(input))
+  .handler(async ({ context, data }) => {
+    const ws = await obterWorkspaceId(context.supabase);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("platform_credentials")
+      .delete()
+      .eq("workspace_id", ws)
+      .eq("platform", data.plataforma);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 export const sincronizarAgora = createServerFn({ method: "POST" })
@@ -373,13 +416,15 @@ export const iniciarConexao = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const ws = await obterWorkspaceId(context.supabase);
     const origem = process.env["PUBLIC_APP_URL"] ?? "";
-    const clientId =
-      data.plataforma === "META" ? process.env["META_APP_ID"] : process.env["GOOGLE_ADS_CLIENT_ID"];
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { obterCredenciais } = await import("./luma/credenciais.server");
+    const credenciais = await obterCredenciais(supabaseAdmin, ws, data.plataforma);
+    const clientId = credenciais?.clientId;
     if (!clientId) {
       throw new Error(
         data.plataforma === "META"
-          ? "Credenciais do app Meta não configuradas. Adicione META_APP_ID e META_APP_SECRET nas chaves do projeto."
-          : "Credenciais do Google Ads não configuradas. Adicione GOOGLE_ADS_CLIENT_ID, GOOGLE_ADS_CLIENT_SECRET e GOOGLE_ADS_DEVELOPER_TOKEN nas chaves do projeto.",
+          ? "Cadastre o ID e a chave secreta do app Meta antes de conectar a conta."
+          : "Cadastre o ID do cliente, a chave secreta e o token de desenvolvedor do Google Ads antes de conectar a conta.",
       );
     }
 
@@ -768,4 +813,35 @@ export const revogarChaveMcp = createServerFn({ method: "POST" })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+const mensagemChat = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().min(1).max(6000),
+});
+
+/** Conversa com a estrategista de IA usando os dados reais do workspace. */
+export const conversarEstrategista = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((dados: unknown) =>
+    z
+      .object({
+        historico: z.array(mensagemChat).min(1).max(24),
+        modo: z.enum(["RAPIDO", "PRIME"]).default("RAPIDO"),
+      })
+      .parse(dados),
+  )
+  .handler(async ({ context, data }) => {
+    const ws = await obterWorkspaceId(context.supabase);
+    const { data: workspace } = await context.supabase
+      .from("workspaces")
+      .select("demo_mode, agent_stopped")
+      .eq("id", ws)
+      .maybeSingle();
+
+    const { conversar } = await import("./luma/estrategista.server");
+    return conversar(context.supabase, ws, data.historico, data.modo, {
+      demo: workspace?.demo_mode !== false,
+      parado: workspace?.agent_stopped === true,
+    });
   });
