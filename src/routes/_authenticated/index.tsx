@@ -130,6 +130,8 @@ function Pagina() {
 
   return (
     <div className="space-y-6">
+      <TourBoasVindas />
+
       <header>
         <h1 className="text-2xl font-semibold">Visão Geral</h1>
         <p className="text-sm text-muted-foreground">
@@ -147,6 +149,7 @@ function Pagina() {
           única vez e expira — abrir fila de decisões.
         </Link>
       ) : null}
+
 
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
