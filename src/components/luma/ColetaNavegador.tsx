@@ -91,8 +91,20 @@ export function ColetaNavegador() {
     onError: (erro: Error) => toast.error(erro.message),
   });
 
+  // Salva a configuração atual antes de disparar, para não depender do botão "Salvar".
   const mIniciar = useMutation({
-    mutationFn: (p: Plataforma) => iniciar({ data: { plataforma: p } }),
+    mutationFn: async (p: Plataforma) => {
+      const atual = valor(p);
+      await salvar({
+        data: {
+          plataforma: p,
+          modo: atual.modo as "DEMO" | "API" | "BROWSER",
+          conta: atual.conta,
+          dias: atual.dias as 7 | 14 | 30,
+        },
+      });
+      return iniciar({ data: { plataforma: p } });
+    },
     onSuccess: () => {
       toast.success("Coleta iniciada. Acompanhe a sessão ao vivo para entrar na conta, se for pedido.");
       invalidar();
@@ -100,14 +112,6 @@ export function ColetaNavegador() {
     onError: (erro: Error) => toast.error(erro.message),
   });
 
-  const mParar = useMutation({
-    mutationFn: (id: string) => parar({ data: { id } }),
-    onSuccess: () => {
-      toast.success("Coleta interrompida.");
-      invalidar();
-    },
-    onError: (erro: Error) => toast.error(erro.message),
-  });
 
   const emAndamento = (data?.execucoes ?? []).filter((e) => e.status === "RUNNING");
 
