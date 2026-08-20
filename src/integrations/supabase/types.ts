@@ -100,6 +100,100 @@ export type Database = {
           },
         ]
       }
+      browser_collection_runs: {
+        Row: {
+          campaigns: number
+          error: string | null
+          finished_at: string | null
+          id: string
+          live_url: string | null
+          platform: Database["public"]["Enums"]["platform"]
+          started_at: string
+          status: Database["public"]["Enums"]["browser_run_status"]
+          step: string | null
+          task_id: string
+          workspace_id: string
+        }
+        Insert: {
+          campaigns?: number
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          live_url?: string | null
+          platform: Database["public"]["Enums"]["platform"]
+          started_at?: string
+          status?: Database["public"]["Enums"]["browser_run_status"]
+          step?: string | null
+          task_id: string
+          workspace_id: string
+        }
+        Update: {
+          campaigns?: number
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          live_url?: string | null
+          platform?: Database["public"]["Enums"]["platform"]
+          started_at?: string
+          status?: Database["public"]["Enums"]["browser_run_status"]
+          step?: string | null
+          task_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "browser_collection_runs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      browser_collections: {
+        Row: {
+          created_at: string
+          external_account_id: string | null
+          id: string
+          lookback_days: number
+          mode: Database["public"]["Enums"]["collection_mode"]
+          platform: Database["public"]["Enums"]["platform"]
+          profile_id: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          external_account_id?: string | null
+          id?: string
+          lookback_days?: number
+          mode?: Database["public"]["Enums"]["collection_mode"]
+          platform: Database["public"]["Enums"]["platform"]
+          profile_id?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          external_account_id?: string | null
+          id?: string
+          lookback_days?: number
+          mode?: Database["public"]["Enums"]["collection_mode"]
+          platform?: Database["public"]["Enums"]["platform"]
+          profile_id?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "browser_collections_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           account_id: string
@@ -701,6 +795,7 @@ export type Database = {
       workspaces: {
         Row: {
           agent_stopped: boolean
+          ai_model: string
           auto_sync_enabled: boolean
           created_at: string
           demo_mode: boolean
@@ -715,6 +810,7 @@ export type Database = {
         }
         Insert: {
           agent_stopped?: boolean
+          ai_model?: string
           auto_sync_enabled?: boolean
           created_at?: string
           demo_mode?: boolean
@@ -729,6 +825,7 @@ export type Database = {
         }
         Update: {
           agent_stopped?: boolean
+          ai_model?: string
           auto_sync_enabled?: boolean
           created_at?: string
           demo_mode?: boolean
@@ -752,6 +849,8 @@ export type Database = {
       seed_demo_workspace: { Args: { _ws: string }; Returns: undefined }
     }
     Enums: {
+      browser_run_status: "RUNNING" | "FINISHED" | "FAILED" | "STOPPED"
+      collection_mode: "DEMO" | "API" | "BROWSER"
       decision_action_type:
         | "PAUSE_CAMPAIGN"
         | "RESUME_CAMPAIGN"
@@ -898,6 +997,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      browser_run_status: ["RUNNING", "FINISHED", "FAILED", "STOPPED"],
+      collection_mode: ["DEMO", "API", "BROWSER"],
       decision_action_type: [
         "PAUSE_CAMPAIGN",
         "RESUME_CAMPAIGN",
