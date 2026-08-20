@@ -137,7 +137,7 @@ export function AppLayout() {
         </SheetContent>
       </Sheet>
 
-      <div className="flex min-h-screen flex-1 flex-col lg:ml-60">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:ml-60">
         <header className="sticky top-0 z-20 flex h-14 items-center justify-between gap-4 border-b border-border bg-background/95 px-4 backdrop-blur sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <button
@@ -177,7 +177,7 @@ export function AppLayout() {
 
         {workspace && <AgentStoppedBanner workspace={workspace} />}
 
-        <main className="flex-1 p-4 sm:p-6">
+        <main className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6">
           <Outlet />
         </main>
       </div>
