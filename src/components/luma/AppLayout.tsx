@@ -11,6 +11,8 @@ import {
   LayoutDashboard,
   LogOut,
   Megaphone,
+  Menu,
+
   NotebookPen,
   Plug,
   Settings,
