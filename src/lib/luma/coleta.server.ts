@@ -18,7 +18,7 @@ import { gravarCampanhas } from "./sync.server";
 const MODELO_NAVEGADOR = () => process.env["BROWSER_USE_MODEL"] || "browser-use-2.0";
 
 /** Tempo máximo de cada tipo de sessão, em minutos. */
-const LIMITE_MIN = { LOGIN: 10, COLLECT: 15 } as const;
+const LIMITE_MIN = { LOGIN: 10, COLLECT: 25 } as const;
 
 
 export type Plataforma = "META" | "GOOGLE_ADS";
