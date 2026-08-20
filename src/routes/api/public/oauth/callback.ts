@@ -81,7 +81,7 @@ export const Route = createFileRoute("/api/public/oauth/callback")({
                 expires_at: expiraEm ? new Date(Date.now() + expiraEm * 1000).toISOString() : null,
                 metadata_json: { demo: false },
               },
-              { onConflict: "workspace_id,platform" },
+              { onConflict: "workspace_id,platform,account_id" },
             )
             .select("id")
             .single();
