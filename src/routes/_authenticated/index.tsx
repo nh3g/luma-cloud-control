@@ -28,6 +28,9 @@ import {
 } from "@/lib/luma/format";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TourBoasVindas } from "@/components/luma/TourBoasVindas";
+import { useWorkspace } from "@/hooks/useWorkspace";
+
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
