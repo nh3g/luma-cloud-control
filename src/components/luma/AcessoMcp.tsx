@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatarDataHora, formatarRelativo } from "@/lib/luma/format";
 import { gerarChaveMcp, listarChavesMcp, revogarChaveMcp } from "@/lib/luma.functions";
+import { ConfirmarAcao } from "@/components/luma/ConfirmarAcao";
+
 
 /** Bloco de acesso MCP: chaves para agentes externos (Claude, ChatGPT, Cursor). */
 export function AcessoMcp() {
