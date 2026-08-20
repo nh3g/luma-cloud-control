@@ -141,7 +141,7 @@ export async function acompanharColeta(sb: Sb, ws: string, runId: string) {
   if (estado.status === "FINISHED") {
     let total = 0;
     try {
-      total = await gravarCampanhas(sb, ws, run.platform, run.platform === "META" ? "navegador" : "navegador", estado.campanhas);
+      total = await gravarCampanhas(sb, ws, run.platform, "navegador", estado.campanhas);
       atualizacao["campaigns"] = total;
       if (total === 0) atualizacao["error"] = "A coleta terminou sem campanhas legíveis. Confira a conta e o período.";
     } catch (erro) {
