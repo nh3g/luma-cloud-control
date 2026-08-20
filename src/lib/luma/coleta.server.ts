@@ -40,7 +40,7 @@ export async function listarColeta(sb: Sb, ws: string) {
 export async function salvarColeta(
   sb: Sb,
   ws: string,
-  entrada: { plataforma: Plataforma; modo: "DEMO" | "API" | "BROWSER"; conta: string; dias: 7 | 14 | 30 },
+  entrada: { plataforma: Plataforma; modo: "DEMO" | "API" | "BROWSER" | "IMPORT"; conta: string; dias: 7 | 14 | 30 },
 ) {
   const { error } = await sb.from("browser_collections").upsert(
     {
@@ -67,7 +67,7 @@ async function refletirIntegracao(
   sb: Sb,
   ws: string,
   plataforma: Plataforma,
-  modo: "DEMO" | "API" | "BROWSER",
+  modo: "DEMO" | "API" | "BROWSER" | "IMPORT",
   conta: string,
 ) {
   const { data: existente } = await sb
@@ -79,6 +79,7 @@ async function refletirIntegracao(
 
   const nome = plataforma === "META" ? "Meta Ads (navegador)" : "Google Ads (navegador)";
 
+  if (modo === "IMPORT") return; // a importação cuida da própria integração
   if (modo === "BROWSER") {
     const dados = {
       workspace_id: ws,

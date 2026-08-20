@@ -31,7 +31,8 @@ const titulos: Record<Plataforma, string> = { META: "Meta Ads", GOOGLE_ADS: "Goo
 const rotuloModo: Record<string, string> = {
   DEMO: "Demonstração (números simulados)",
   API: "API oficial (token conectado)",
-  BROWSER: "Navegador na nuvem (lê o painel)",
+  BROWSER: "Navegador na nuvem (pago por sessão)",
+  IMPORT: "Importar relatório exportado (grátis)",
 };
 
 const rotuloStatus: Record<string, string> = {
@@ -80,7 +81,7 @@ export function ColetaNavegador() {
       salvar({
         data: {
           plataforma: p,
-          modo: valor(p).modo as "DEMO" | "API" | "BROWSER",
+          modo: valor(p).modo as "DEMO" | "API" | "BROWSER" | "IMPORT",
           conta: valor(p).conta,
           dias: valor(p).dias as 7 | 14 | 30,
         },
@@ -99,7 +100,7 @@ export function ColetaNavegador() {
       await salvar({
         data: {
           plataforma: p,
-          modo: atual.modo as "DEMO" | "API" | "BROWSER",
+          modo: atual.modo as "DEMO" | "API" | "BROWSER" | "IMPORT",
           conta: atual.conta,
           dias: atual.dias as 7 | 14 | 30,
         },
@@ -205,10 +206,16 @@ export function ColetaNavegador() {
                 </div>
               </div>
 
+              <p className="text-xs text-amber-400">
+                Cada coleta por navegador consome créditos pagos do serviço Browser Use. Para não gastar, use a
+                importação de relatório acima ou a API oficial.
+              </p>
+
               <p className="text-xs text-muted-foreground">
                 O navegador usa a conta em que você já está logado. Preencha só se o seu login tiver várias contas de
                 anúncio e você quiser fixar uma — pode ser o nome ou o número da conta.
               </p>
+
 
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" onClick={() => mSalvar.mutate(p)} disabled={mSalvar.isPending}>

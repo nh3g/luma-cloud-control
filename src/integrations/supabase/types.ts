@@ -432,6 +432,53 @@ export type Database = {
           },
         ]
       }
+      import_batches: {
+        Row: {
+          campaigns: number
+          created_at: string
+          id: string
+          lookback_days: number
+          platform: Database["public"]["Enums"]["platform"]
+          revenue: number
+          source_label: string | null
+          spend: number
+          summary: string | null
+          workspace_id: string
+        }
+        Insert: {
+          campaigns?: number
+          created_at?: string
+          id?: string
+          lookback_days?: number
+          platform: Database["public"]["Enums"]["platform"]
+          revenue?: number
+          source_label?: string | null
+          spend?: number
+          summary?: string | null
+          workspace_id: string
+        }
+        Update: {
+          campaigns?: number
+          created_at?: string
+          id?: string
+          lookback_days?: number
+          platform?: Database["public"]["Enums"]["platform"]
+          revenue?: number
+          source_label?: string | null
+          spend?: number
+          summary?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_batches_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_tokens: {
         Row: {
           access_token: string
@@ -879,7 +926,7 @@ export type Database = {
     }
     Enums: {
       browser_run_status: "RUNNING" | "FINISHED" | "FAILED" | "STOPPED"
-      collection_mode: "DEMO" | "API" | "BROWSER"
+      collection_mode: "DEMO" | "API" | "BROWSER" | "IMPORT"
       decision_action_type:
         | "PAUSE_CAMPAIGN"
         | "RESUME_CAMPAIGN"
@@ -1027,7 +1074,7 @@ export const Constants = {
   public: {
     Enums: {
       browser_run_status: ["RUNNING", "FINISHED", "FAILED", "STOPPED"],
-      collection_mode: ["DEMO", "API", "BROWSER"],
+      collection_mode: ["DEMO", "API", "BROWSER", "IMPORT"],
       decision_action_type: [
         "PAUSE_CAMPAIGN",
         "RESUME_CAMPAIGN",
