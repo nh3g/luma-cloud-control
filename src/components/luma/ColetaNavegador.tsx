@@ -112,6 +112,15 @@ export function ColetaNavegador() {
     onError: (erro: Error) => toast.error(erro.message),
   });
 
+  const mParar = useMutation({
+    mutationFn: (id: string) => parar({ data: { id } }),
+    onSuccess: () => {
+      toast.success("Coleta interrompida.");
+      invalidar();
+    },
+    onError: (erro: Error) => toast.error(erro.message),
+  });
+
 
   const emAndamento = (data?.execucoes ?? []).filter((e) => e.status === "RUNNING");
 
