@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Eraser } from "lucide-react";
+import { Eraser, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ConfirmarAcao } from "@/components/luma/ConfirmarAcao";
-import { limparDadosWorkspace } from "@/lib/luma.functions";
+import { limparDadosWorkspace, recriarDemonstracao } from "@/lib/luma.functions";
 
 type Escopo = "DEMO" | "REAIS";
 type Plataforma = "TODAS" | "META" | "GOOGLE_ADS";
@@ -28,11 +28,18 @@ const rotuloEscopo: Record<Escopo, string> = {
 /** Apaga números fictícios ou coletados, para que os dois nunca se misturem. */
 export function LimpezaDados() {
   const limpar = useServerFn(limparDadosWorkspace);
+  const recriar = useServerFn(recriarDemonstracao);
   const queryClient = useQueryClient();
 
   const [escopo, setEscopo] = useState<Escopo>("DEMO");
   const [plataforma, setPlataforma] = useState<Plataforma>("TODAS");
   const [periodo, setPeriodo] = useState<Periodo>(0);
+
+  const invalidar = () => {
+    for (const chave of ["visao-geral", "campanhas", "decisoes", "integracoes", "coleta-navegador", "diagnostico", "notas"]) {
+      void queryClient.invalidateQueries({ queryKey: [chave] });
+    }
+  };
 
   const mLimpar = useMutation({
     mutationFn: () => limpar({ data: { escopo, plataforma, periodo } }),
@@ -40,9 +47,20 @@ export function LimpezaDados() {
       toast.success(
         `Limpeza concluída: ${r.campanhas} campanhas, ${r.medicoes} medições e ${r.decisoes} decisões removidas.`,
       );
-      for (const chave of ["visao-geral", "campanhas", "decisoes", "integracoes", "coleta-navegador", "diagnostico"]) {
-        void queryClient.invalidateQueries({ queryKey: [chave] });
-      }
+      invalidar();
+    },
+    onError: (erro: Error) => toast.error(erro.message),
+  });
+
+  const mRecriar = useMutation({
+    mutationFn: () => recriar(),
+    onSuccess: (r) => {
+      toast.success(
+        r.recriado
+          ? `Dados de demonstração recriados: ${r.campanhas} campanhas fictícias.`
+          : "Os dados de demonstração já estavam no lugar.",
+      );
+      invalidar();
     },
     onError: (erro: Error) => toast.error(erro.message),
   });
@@ -120,6 +138,25 @@ export function LimpezaDados() {
           </Button>
         )}
       </ConfirmarAcao>
+
+      <div className="border-t border-border pt-4">
+        <p className="mb-2 text-sm text-muted-foreground">
+          Apagou os números fictícios e quer conhecer o fluxo de novo? Recrie o conjunto de demonstração — os dados
+          reais não são afetados.
+        </p>
+        <ConfirmarAcao
+          titulo="Recriar dados de demonstração?"
+          descricao="Serão inseridas novamente as campanhas, métricas e decisões fictícias. Seus dados reais permanecem intactos."
+          rotuloConfirmar="Recriar"
+          aoConfirmar={() => mRecriar.mutate()}
+        >
+          {(abrir) => (
+            <Button variant="outline" size="sm" onClick={abrir} disabled={mRecriar.isPending}>
+              <RotateCcw className="mr-2 h-4 w-4" /> Recriar dados de demonstração
+            </Button>
+          )}
+        </ConfirmarAcao>
+      </div>
     </section>
   );
 }

@@ -83,6 +83,9 @@ function Pagina() {
     void queryClient.invalidateQueries({ queryKey: ["integracoes"] });
     void queryClient.invalidateQueries({ queryKey: ["visao-geral"] });
     void queryClient.invalidateQueries({ queryKey: ["campanhas"] });
+    void queryClient.invalidateQueries({ queryKey: ["decisoes"] });
+    void queryClient.invalidateQueries({ queryKey: ["diagnostico"] });
+    void queryClient.invalidateQueries({ queryKey: ["notas"] });
   };
 
   const mSync = useMutation({
@@ -101,14 +104,23 @@ function Pagina() {
 
   const mPreferencia = useMutation({
     mutationFn: (entrada: { campo: "demo_mode" | "auto_sync_enabled"; valor: boolean }) => alternar({ data: entrada }),
-    onSuccess: (_r, entrada) => {
-      toast.success(
-        entrada.campo === "demo_mode" && !entrada.valor
-          ? "Modo demonstração desligado. Use a limpeza de dados abaixo para apagar os números fictícios."
-          : "Preferência atualizada.",
-      );
+    onSuccess: (r, entrada) => {
+      if (entrada.campo === "demo_mode" && entrada.valor) {
+        toast.success(
+          r.recriado
+            ? `Modo demonstração ligado — ${r.campanhas} campanhas fictícias recriadas.`
+            : "Modo demonstração ligado — os dados fictícios já estavam no lugar.",
+        );
+      } else {
+        toast.success(
+          entrada.campo === "demo_mode"
+            ? "Modo demonstração desligado. Use a limpeza de dados abaixo para apagar os números fictícios."
+            : "Preferência atualizada.",
+        );
+      }
       invalidar();
     },
+
     onError: (erro: Error) => toast.error(erro.message),
   });
 

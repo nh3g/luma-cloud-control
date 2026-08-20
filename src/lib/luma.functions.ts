@@ -422,8 +422,26 @@ export const alternarPreferenciaWorkspace = createServerFn({ method: "POST" })
       .update(data.campo === "demo_mode" ? { demo_mode: data.valor } : { auto_sync_enabled: data.valor })
       .eq("id", ws);
     if (error) throw new Error(error.message);
-    return { ok: true };
+
+    // Ligar o modo demonstração traz os números fictícios de volta se eles
+    // tiverem sido apagados na limpeza de dados.
+    if (data.campo === "demo_mode" && data.valor === true) {
+      const { garantirDemonstracao } = await import("./luma/demo.server");
+      const r = await garantirDemonstracao(ws);
+      return { ok: true, ...r };
+    }
+
+    return { ok: true, recriado: false, campanhas: 0 };
   });
+
+export const recriarDemonstracao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const ws = await obterWorkspaceId(context.supabase);
+    const { garantirDemonstracao } = await import("./luma/demo.server");
+    return garantirDemonstracao(ws);
+  });
+
 
 export const desconectarIntegracao = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
