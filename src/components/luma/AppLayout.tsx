@@ -1,4 +1,7 @@
+import { useState } from "react";
 import { Link, Outlet, useNavigate } from "@tanstack/react-router";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+
 import {
   BarChart3,
   Bot,
