@@ -14,7 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      workspaces: {
+        Row: {
+          agent_stopped: boolean
+          created_at: string
+          demo_mode: boolean
+          id: string
+          name: string
+          onboarding_completed: boolean
+          owner_id: string
+          profile_avatar: string
+          profile_color: string
+          updated_at: string
+        }
+        Insert: {
+          agent_stopped?: boolean
+          created_at?: string
+          demo_mode?: boolean
+          id?: string
+          name?: string
+          onboarding_completed?: boolean
+          owner_id: string
+          profile_avatar?: string
+          profile_color?: string
+          updated_at?: string
+        }
+        Update: {
+          agent_stopped?: boolean
+          created_at?: string
+          demo_mode?: boolean
+          id?: string
+          name?: string
+          onboarding_completed?: boolean
+          owner_id?: string
+          profile_avatar?: string
+          profile_color?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
