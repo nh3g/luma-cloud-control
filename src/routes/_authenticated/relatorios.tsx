@@ -50,7 +50,7 @@ function Pagina() {
   const [baixando, setBaixando] = useState(false);
   const exportar = useServerFn(exportarRelatorioCsv);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["relatorio", dias],
     queryFn: () => obterRelatorio({ data: { dias } }),
   });
@@ -97,7 +97,9 @@ function Pagina() {
         </div>
       </header>
 
-      {isLoading || !data ? (
+      {error ? (
+        <ErroTela erro={error} aoTentarNovamente={() => void refetch()} titulo="Não foi possível carregar o relatório" />
+      ) : isLoading || !data ? (
         <div className="flex items-center gap-2 py-16 text-muted-foreground">
           <Loader2 className="size-4 animate-spin" /> Carregando relatório…
         </div>

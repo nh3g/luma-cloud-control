@@ -15,6 +15,7 @@ import {
   rotuloStatusCampanha,
 } from "@/lib/luma/format";
 import { Badge } from "@/components/ui/badge";
+import { ErroTela } from "@/components/luma/Estados";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -67,7 +68,7 @@ type Coluna =
   | "frequency";
 
 function Pagina() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["campanhas"],
     queryFn: () => listarCampanhas(),
   });

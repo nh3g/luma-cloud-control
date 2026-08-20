@@ -38,7 +38,7 @@ export const Route = createFileRoute("/_authenticated/diagnostico")({
 });
 
 function Pagina() {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["diagnostico"],
     queryFn: () => obterDiagnostico(),
   });

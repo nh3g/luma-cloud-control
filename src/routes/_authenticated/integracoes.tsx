@@ -68,7 +68,7 @@ function Pagina() {
   const conectar = useServerFn(iniciarConexao);
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({ queryKey: ["integracoes"], queryFn: () => carregar() });
+  const { data, isLoading, error, refetch } = useQuery({ queryKey: ["integracoes"], queryFn: () => carregar() });
 
   useEffect(() => {
     if (busca.conectado) toast.success(`${rotuloPlataforma[busca.conectado] ?? busca.conectado} conectado com sucesso.`);
