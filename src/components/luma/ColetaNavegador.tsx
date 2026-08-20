@@ -206,14 +206,16 @@ export function ColetaNavegador() {
                 </div>
               </div>
 
-              <p className="text-xs text-muted-foreground">
-                    <p className="text-xs text-amber-400">
+              <p className="text-xs text-amber-400">
                 Cada coleta por navegador consome créditos pagos do serviço Browser Use. Para não gastar, use a
                 importação de relatório acima ou a API oficial.
               </p>
-              PLACEHOLDER O navegador usa a conta em que você já está logado. Preencha só se o seu login tiver várias contas de
+
+              <p className="text-xs text-muted-foreground">
+                O navegador usa a conta em que você já está logado. Preencha só se o seu login tiver várias contas de
                 anúncio e você quiser fixar uma — pode ser o nome ou o número da conta.
               </p>
+
 
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" onClick={() => mSalvar.mutate(p)} disabled={mSalvar.isPending}>
