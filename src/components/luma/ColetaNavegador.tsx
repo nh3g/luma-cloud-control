@@ -147,10 +147,13 @@ export function ColetaNavegador() {
         </p>
         {data && !data.servicoConfigurado && (
           <p className="mt-2 text-xs text-amber-400">
-            O serviço de navegador ainda não está configurado neste projeto.
+            Cadastre a chave do serviço de navegador abaixo para liberar a coleta.
           </p>
         )}
       </div>
+
+      <ChaveNavegador situacao={data?.chaveServico} />
+
 
       <div className="grid gap-4 lg:grid-cols-2">
         {(["META", "GOOGLE_ADS"] as Plataforma[]).map((p) => {
