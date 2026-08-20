@@ -278,14 +278,24 @@ function Pagina() {
                       >
                         <Check className="mr-1 size-4" /> Aprovar
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={agenteParado || mutacao.isPending}
-                        onClick={() => mutacao.mutate({ id: d.id, acao: "RECUSAR" })}
+                      <ConfirmarAcao
+                        titulo="Recusar esta decisão?"
+                        descricao="A decisão sai da fila e não poderá mais ser aprovada. O agente só voltará a propor algo parecido na próxima análise."
+                        rotuloConfirmar="Recusar decisão"
+                        aoConfirmar={() => mutacao.mutate({ id: d.id, acao: "RECUSAR" })}
                       >
-                        <X className="mr-1 size-4" /> Recusar
-                      </Button>
+                        {(abrir) => (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={agenteParado || mutacao.isPending}
+                            onClick={abrir}
+                          >
+                            <X className="mr-1 size-4" /> Recusar
+                          </Button>
+                        )}
+                      </ConfirmarAcao>
+
                     </div>
                   ) : d.status === "APPROVED" && restante !== null ? (
                     <div className="flex shrink-0 flex-col items-end gap-1">
