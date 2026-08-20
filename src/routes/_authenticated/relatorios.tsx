@@ -218,9 +218,10 @@ function Cartao({
       <CardContent className="p-4">
         <p className="text-xs uppercase tracking-wide text-muted-foreground">{titulo}</p>
         <p className="mt-1 text-2xl font-semibold">{valor}</p>
-        {v === null || v === undefined ? (
+        {v === null ? (
           <p className="mt-1 text-xs text-muted-foreground">Sem período anterior para comparar</p>
-        ) : (
+        ) : v === undefined ? null : (
+
           <p
             className={
               bom
