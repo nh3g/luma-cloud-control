@@ -70,7 +70,7 @@ export async function conversar(
   ws: string,
   historico: MensagemChat[],
   modo: ModoEstrategista,
-  contexto: { demo: boolean; parado: boolean },
+  contexto: { demo: boolean; parado: boolean; modelo?: string },
 ): Promise<ResultadoEstrategista> {
   const mensagens: MensagemChat[] = [
     { role: "system", content: instrucoes(modo, contexto.demo, contexto.parado) },
@@ -80,7 +80,7 @@ export async function conversar(
   const propostas: string[] = [];
 
   for (let volta = 0; volta < MAX_VOLTAS; volta += 1) {
-    const mensagem = await chamarGateway(mensagens, modo);
+    const mensagem = await chamarModelo(mensagens, modo, contexto.modelo ?? MODELO_PADRAO);
     mensagens.push(mensagem);
 
     const chamadas = mensagem.tool_calls ?? [];
