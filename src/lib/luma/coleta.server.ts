@@ -4,13 +4,20 @@
  * campanhas lidas no banco quando a coleta termina.
  */
 import type { Sb } from "../luma.server";
-import { chaveNavegadorConfigurada, consultarColeta, garantirPerfil, iniciarColeta, pararColeta } from "./browser.server";
+import { consultarColeta, garantirPerfil, iniciarColeta, pararColeta } from "./browser.server";
 import { gravarCampanhas } from "./sync.server";
 
 export type Plataforma = "META" | "GOOGLE_ADS";
 
+/** Chave do serviço de navegador do workspace (ou a do projeto). */
+async function chaveDoWorkspace(ws: string): Promise<{ chave: string; origem: "workspace" | "projeto" } | null> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { obterChaveNavegador } = await import("./credenciais.server");
+  return obterChaveNavegador(supabaseAdmin, ws);
+}
+
 export async function listarColeta(sb: Sb, ws: string) {
-  const [configs, execucoes] = await Promise.all([
+  const [configs, execucoes, chave] = await Promise.all([
     sb.from("browser_collections").select("*").eq("workspace_id", ws),
     sb
       .from("browser_collection_runs")
@@ -18,11 +25,15 @@ export async function listarColeta(sb: Sb, ws: string) {
       .eq("workspace_id", ws)
       .order("started_at", { ascending: false })
       .limit(10),
+    chaveDoWorkspace(ws),
   ]);
   return {
     configuracoes: configs.data ?? [],
     execucoes: execucoes.data ?? [],
-    servicoConfigurado: chaveNavegadorConfigurada(),
+    servicoConfigurado: Boolean(chave),
+    chaveServico: chave
+      ? { configurada: true, origem: chave.origem, prefixo: chave.chave.slice(0, 6) }
+      : { configurada: false as const },
   };
 }
 
@@ -95,8 +106,9 @@ async function refletirIntegracao(
 
 /** Dispara uma coleta por navegador para a plataforma escolhida. */
 export async function dispararColeta(sb: Sb, ws: string, plataforma: Plataforma) {
-  if (!chaveNavegadorConfigurada()) {
-    throw new Error("O serviço de navegador não está configurado neste projeto.");
+  const servico = await chaveDoWorkspace(ws);
+  if (!servico) {
+    throw new Error("Cadastre a chave do serviço de navegador (Browser Use) em Integrações antes de coletar.");
   }
   const { data: workspace } = await sb
     .from("workspaces")
@@ -128,12 +140,13 @@ export async function dispararColeta(sb: Sb, ws: string, plataforma: Plataforma)
     .limit(1);
   if ((emCurso ?? []).length > 0) throw new Error("Já existe uma coleta em andamento para esta plataforma.");
 
-  const perfilId = await garantirPerfil(config.profile_id);
+  const perfilId = await garantirPerfil(servico.chave, config.profile_id);
   if (perfilId !== config.profile_id) {
     await sb.from("browser_collections").update({ profile_id: perfilId }).eq("id", config.id);
   }
 
   const { taskId, liveUrl } = await iniciarColeta({
+    chave: servico.chave,
     plataforma,
     conta: config.external_account_id ?? "",
     dias: config.lookback_days,
@@ -163,9 +176,12 @@ export async function acompanharColeta(sb: Sb, ws: string, runId: string) {
   if (!run) throw new Error("Execução de coleta não encontrada.");
   if (run.status !== "RUNNING") return run;
 
+  const servico = await chaveDoWorkspace(ws);
+  if (!servico) throw new Error("A chave do serviço de navegador não está cadastrada.");
+
   let estado;
   try {
-    estado = await consultarColeta(run.task_id, run.platform);
+    estado = await consultarColeta(servico.chave, run.task_id, run.platform);
   } catch (erro) {
     const mensagem = erro instanceof Error ? erro.message : "Falha ao consultar a coleta.";
     const { data } = await sb
@@ -238,7 +254,8 @@ export async function interromperColeta(sb: Sb, ws: string, runId: string) {
   if (!run) throw new Error("Execução de coleta não encontrada.");
   if (run.status === "RUNNING") {
     try {
-      await pararColeta(run.task_id);
+      const servico = await chaveDoWorkspace(ws);
+      if (servico) await pararColeta(servico.chave, run.task_id);
     } catch {
       /* a tarefa pode já ter terminado na nuvem */
     }

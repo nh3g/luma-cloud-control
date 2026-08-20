@@ -67,3 +67,29 @@ export async function situacaoCredenciais(admin: Sb, ws: string) {
       : { configurada: false },
   } as Record<Plataforma, { configurada: boolean; origem?: "workspace" | "projeto"; prefixo?: string }>;
 }
+
+/* ── Chave do serviço de navegador (Browser Use) ───────────────────────── */
+
+/** Chave cadastrada pelo dono; se não houver, a chave do projeto. */
+export async function obterChaveNavegador(
+  admin: Sb,
+  ws: string,
+): Promise<{ chave: string; origem: "workspace" | "projeto" } | null> {
+  const { data } = await admin
+    .from("service_credentials")
+    .select("api_key")
+    .eq("workspace_id", ws)
+    .eq("service", "BROWSER_USE")
+    .maybeSingle();
+  if (data?.api_key) return { chave: data.api_key, origem: "workspace" };
+  const doProjeto = process.env["BROWSER_USE_API_KEY"];
+  return doProjeto ? { chave: doProjeto, origem: "projeto" } : null;
+}
+
+/** Situação da chave do navegador para a interface — nunca devolve o valor. */
+export async function situacaoNavegador(admin: Sb, ws: string) {
+  const atual = await obterChaveNavegador(admin, ws);
+  return atual
+    ? { configurada: true, origem: atual.origem, prefixo: atual.chave.slice(0, 6) }
+    : { configurada: false as const };
+}

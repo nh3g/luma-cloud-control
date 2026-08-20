@@ -740,3 +740,50 @@ export const testarModeloIa = createServerFn({ method: "POST" })
     const { testarIa } = await import("./luma/ia.server");
     return testarIa(data.modelo);
   });
+
+/* ── Chave do serviço de navegador e limpeza de dados ──────────────────── */
+
+export const salvarChaveNavegador = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ chave: z.string().trim().min(10).max(300) }).parse(input))
+  .handler(async ({ context, data }) => {
+    const ws = await obterWorkspaceId(context.supabase);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("service_credentials").upsert(
+      { workspace_id: ws, service: "BROWSER_USE", api_key: data.chave, updated_at: new Date().toISOString() },
+      { onConflict: "workspace_id,service" },
+    );
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const removerChaveNavegador = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const ws = await obterWorkspaceId(context.supabase);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("service_credentials")
+      .delete()
+      .eq("workspace_id", ws)
+      .eq("service", "BROWSER_USE");
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const limparDadosWorkspace = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        escopo: z.enum(["DEMO", "REAIS"]),
+        plataforma: z.enum(["TODAS", "META", "GOOGLE_ADS"]).default("TODAS"),
+        periodo: z.union([z.literal(0), z.literal(7), z.literal(14), z.literal(30)]).default(0),
+      })
+      .parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const { limparDados } = await import("./luma/limpeza.server");
+    const ws = await obterWorkspaceId(context.supabase);
+    return limparDados(context.supabase, ws, data);
+  });

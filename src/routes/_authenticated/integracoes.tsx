@@ -8,6 +8,7 @@ import { AlertTriangle, CheckCircle2, Link2, Plug, RefreshCw, Unplug } from "luc
 import { Button } from "@/components/ui/button";
 import { ChavesPlataforma } from "@/components/luma/ChavesPlataforma";
 import { ColetaNavegador } from "@/components/luma/ColetaNavegador";
+import { LimpezaDados } from "@/components/luma/LimpezaDados";
 import { Switch } from "@/components/ui/switch";
 import {
   formatarDataHora,
@@ -99,8 +100,12 @@ function Pagina() {
 
   const mPreferencia = useMutation({
     mutationFn: (entrada: { campo: "demo_mode" | "auto_sync_enabled"; valor: boolean }) => alternar({ data: entrada }),
-    onSuccess: () => {
-      toast.success("Preferência atualizada.");
+    onSuccess: (_r, entrada) => {
+      toast.success(
+        entrada.campo === "demo_mode" && !entrada.valor
+          ? "Modo demonstração desligado. Use a limpeza de dados abaixo para apagar os números fictícios."
+          : "Preferência atualizada.",
+      );
       invalidar();
     },
     onError: (erro: Error) => toast.error(erro.message),
@@ -254,6 +259,8 @@ function Pagina() {
       </section>
 
       <ColetaNavegador />
+
+      <LimpezaDados />
 
       <section className="rounded-xl border border-border bg-card p-5">
         <h2 className="mb-3 text-lg font-medium">Últimas sincronizações</h2>

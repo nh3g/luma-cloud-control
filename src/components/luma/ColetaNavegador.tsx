@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ChaveNavegador } from "@/components/luma/ChaveNavegador";
 import { formatarDataHora } from "@/lib/luma/format";
 import {
   acompanharColetaNavegador,
@@ -147,10 +148,13 @@ export function ColetaNavegador() {
         </p>
         {data && !data.servicoConfigurado && (
           <p className="mt-2 text-xs text-amber-400">
-            O serviço de navegador ainda não está configurado neste projeto.
+            Cadastre a chave do serviço de navegador abaixo para liberar a coleta.
           </p>
         )}
       </div>
+
+      <ChaveNavegador situacao={data?.chaveServico} />
+
 
       <div className="grid gap-4 lg:grid-cols-2">
         {(["META", "GOOGLE_ADS"] as Plataforma[]).map((p) => {
@@ -233,7 +237,7 @@ export function ColetaNavegador() {
 
               {!data?.servicoConfigurado && (
                 <p className="text-xs text-muted-foreground">
-                  A coleta fica disponível assim que o serviço de navegador estiver configurado no projeto.
+                  A coleta fica disponível assim que a chave do serviço de navegador for cadastrada acima.
                 </p>
               )}
 

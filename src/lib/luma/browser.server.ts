@@ -22,23 +22,14 @@ export type EstadoTarefa = {
   campanhas: CampanhaExterna[];
 };
 
-export function chaveNavegadorConfigurada(): boolean {
-  return Boolean(process.env["BROWSER_USE_API_KEY"]);
-}
-
-function chave(): string {
-  const valor = process.env["BROWSER_USE_API_KEY"];
-  if (!valor) {
-    throw new Error("A chave do serviço de navegador (Browser Use) não está configurada neste projeto.");
+async function pedir<T>(chave: string, caminho: string, init?: RequestInit): Promise<T> {
+  if (!chave) {
+    throw new Error("Cadastre a chave do serviço de navegador (Browser Use) em Integrações antes de coletar.");
   }
-  return valor;
-}
-
-async function pedir<T>(caminho: string, init?: RequestInit): Promise<T> {
   const resposta = await fetch(`${BASE}${caminho}`, {
     ...init,
     headers: {
-      "X-Browser-Use-API-Key": chave(),
+      "X-Browser-Use-API-Key": chave,
       "Content-Type": "application/json",
       ...(init?.headers ?? {}),
     },
@@ -148,9 +139,9 @@ function urlInicial(plataforma: "META" | "GOOGLE_ADS", conta: string) {
 
 
 /** Cria (ou reaproveita) um perfil de navegador para manter o login salvo. */
-export async function garantirPerfil(perfilAtual: string | null): Promise<string> {
+export async function garantirPerfil(chave: string, perfilAtual: string | null): Promise<string> {
   if (perfilAtual) return perfilAtual;
-  const criado = await pedir<{ id?: string; profileId?: string }>("/profiles", {
+  const criado = await pedir<{ id?: string; profileId?: string }>(chave, "/profiles", {
     method: "POST",
     body: JSON.stringify({}),
   });
@@ -161,6 +152,7 @@ export async function garantirPerfil(perfilAtual: string | null): Promise<string
 
 /** Dispara a coleta e devolve o identificador da tarefa na nuvem. */
 export async function iniciarColeta(entrada: {
+  chave: string;
   plataforma: "META" | "GOOGLE_ADS";
   conta: string;
   dias: number;
@@ -168,6 +160,7 @@ export async function iniciarColeta(entrada: {
   modelo: string;
 }): Promise<{ taskId: string; liveUrl: string | null }> {
   const criada = await pedir<{ id?: string; taskId?: string; sessionId?: string; session?: { liveUrl?: string }; liveUrl?: string }>(
+    entrada.chave,
     "/tasks",
     {
       method: "POST",
@@ -234,7 +227,7 @@ function converter(saida: unknown, plataforma: string): CampanhaExterna[] {
 }
 
 /** Consulta o andamento de uma coleta em curso. */
-export async function consultarColeta(taskId: string, plataforma: string): Promise<EstadoTarefa> {
+export async function consultarColeta(chave: string, taskId: string, plataforma: string): Promise<EstadoTarefa> {
   const tarefa = await pedir<{
     status?: string;
     output?: unknown;
@@ -243,7 +236,7 @@ export async function consultarColeta(taskId: string, plataforma: string): Promi
     session?: { liveUrl?: string };
     liveUrl?: string;
     error?: string;
-  }>(`/tasks/${encodeURIComponent(taskId)}`);
+  }>(chave, `/tasks/${encodeURIComponent(taskId)}`);
 
   const status = normalizarStatus(tarefa?.status);
   const passos = tarefa?.steps ?? [];
@@ -258,8 +251,8 @@ export async function consultarColeta(taskId: string, plataforma: string): Promi
 }
 
 /** Interrompe uma coleta em andamento. */
-export async function pararColeta(taskId: string): Promise<void> {
-  await pedir(`/tasks/${encodeURIComponent(taskId)}`, {
+export async function pararColeta(chave: string, taskId: string): Promise<void> {
+  await pedir(chave, `/tasks/${encodeURIComponent(taskId)}`, {
     method: "PATCH",
     body: JSON.stringify({ action: "stop" }),
   });
