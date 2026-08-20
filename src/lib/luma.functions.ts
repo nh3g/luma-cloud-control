@@ -202,3 +202,71 @@ export const excluirNota = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+export const decidirDecisao = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        acao: z.enum(["APROVAR", "RECUSAR"]),
+        nota: z.string().max(500).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ context, data }) => {
+    const ws = await obterWorkspaceId(context.supabase);
+
+    const { data: workspace } = await context.supabase
+      .from("workspaces")
+      .select("agent_stopped")
+      .eq("id", ws)
+      .maybeSingle();
+    if (workspace?.agent_stopped) {
+      throw new Error("O agente está parado. Reative o agente para aprovar ou recusar decisões.");
+    }
+
+    const { data: decisao, error: erroLeitura } = await context.supabase
+      .from("decisions")
+      .select("id, status, expires_at")
+      .eq("id", data.id)
+      .eq("workspace_id", ws)
+      .maybeSingle();
+    if (erroLeitura) throw new Error(erroLeitura.message);
+    if (!decisao) throw new Error("Decisão não encontrada.");
+    if (decisao.status !== "PENDING") throw new Error("Esta decisão já foi respondida.");
+
+    if (new Date(decisao.expires_at).getTime() <= Date.now()) {
+      await context.supabase
+        .from("decisions")
+        .update({ status: "EXPIRED" })
+        .eq("id", data.id)
+        .eq("workspace_id", ws);
+      throw new Error("Esta decisão expirou. Uma nova análise precisa ser gerada.");
+    }
+
+    const agora = new Date().toISOString();
+    const campos =
+      data.acao === "APROVAR"
+        ? {
+            status: "APPROVED" as const,
+            approved_at: agora,
+            approved_by_user_id: context.userId,
+            approval_note: data.nota ?? null,
+          }
+        : {
+            status: "REJECTED" as const,
+            rejected_at: agora,
+            approved_by_user_id: context.userId,
+            approval_note: data.nota ?? null,
+          };
+
+    const { error } = await context.supabase
+      .from("decisions")
+      .update(campos)
+      .eq("id", data.id)
+      .eq("workspace_id", ws)
+      .eq("status", "PENDING");
+    if (error) throw new Error(error.message);
+    return { ok: true, status: campos.status };
+  });
