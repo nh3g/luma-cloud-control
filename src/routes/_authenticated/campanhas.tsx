@@ -189,7 +189,11 @@ function Pagina() {
 
       <Card>
         <CardContent className="p-0">
-          {isLoading ? (
+          {error ? (
+            <div className="p-4">
+              <ErroTela erro={error} aoTentarNovamente={() => void refetch()} titulo="Não foi possível carregar as campanhas" />
+            </div>
+          ) : isLoading ? (
             <div className="flex items-center gap-2 p-8 text-muted-foreground">
               <Loader2 className="size-4 animate-spin" /> Carregando campanhas…
             </div>
