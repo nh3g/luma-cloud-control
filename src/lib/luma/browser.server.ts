@@ -134,10 +134,10 @@ function instrucao(plataforma: "META" | "GOOGLE_ADS", conta: string, dias: numbe
   ].join(" ");
 }
 
-function urlInicial(plataforma: "META" | "GOOGLE_ADS", conta: string) {
-  if (plataforma !== "META") return "https://ads.google.com/aw/campaigns";
-  const id = idNumericoMeta(conta);
-  return `https://adsmanager.facebook.com/adsmanager/manage/campaigns${id ? `?act=${id}` : ""}`;
+const URL_META = "https://pt-br.facebook.com/business/tools/ads-manager";
+
+function urlInicial(plataforma: "META" | "GOOGLE_ADS") {
+  return plataforma === "META" ? URL_META : "https://ads.google.com/aw/campaigns";
 }
 
 
