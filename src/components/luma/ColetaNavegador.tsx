@@ -27,6 +27,43 @@ import {
 } from "@/lib/luma.functions";
 
 
+/**
+ * Janela ao vivo da sessão. Mantém o primeiro endereço recebido para a
+ * execução, para o iframe não reiniciar a cada consulta de andamento.
+ */
+const JanelaAoVivo = memo(function JanelaAoVivo({
+  runId,
+  url,
+  titulo,
+}: {
+  runId: string;
+  url: string | null;
+  titulo: string;
+}) {
+  const fixo = useRef<{ runId: string; url: string } | null>(null);
+  if (url && (!fixo.current || fixo.current.runId !== runId)) fixo.current = { runId, url };
+  const endereco = fixo.current?.runId === runId ? fixo.current.url : null;
+  if (!endereco) return <p className="text-muted-foreground">Preparando a janela ao vivo…</p>;
+  return (
+    <>
+      <iframe
+        title={`Sessão ao vivo ${titulo}`}
+        src={endereco}
+        className="h-[420px] w-full rounded-md border border-border bg-background"
+        allow="clipboard-read; clipboard-write"
+      />
+      <a
+        className="inline-flex items-center gap-1 text-primary underline"
+        href={endereco}
+        target="_blank"
+        rel="noreferrer"
+      >
+        Abrir em uma nova aba <ExternalLink className="h-3 w-3" />
+      </a>
+    </>
+  );
+});
+
 type Plataforma = "META" | "GOOGLE_ADS";
 
 const titulos: Record<Plataforma, string> = { META: "Meta Ads", GOOGLE_ADS: "Google Ads" };
