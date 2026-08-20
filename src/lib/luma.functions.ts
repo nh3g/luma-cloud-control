@@ -734,6 +734,7 @@ export const listarChavesMcp = createServerFn({ method: "GET" })
       .from("mcp_keys")
       .select("id, label, key_prefix, created_at, last_used_at, revoked_at")
       .eq("workspace_id", ws)
+      .is("revoked_at", null)
       .order("created_at", { ascending: false });
     return { chaves: data ?? [] };
   });
