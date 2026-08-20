@@ -124,7 +124,14 @@ export async function acompanharColeta(sb: Sb, ws: string, runId: string) {
     return data ?? run;
   }
 
-  const atualizacao: Record<string, unknown> = {
+  const atualizacao: {
+    status: "RUNNING" | "FINISHED" | "FAILED" | "STOPPED";
+    step: string | null;
+    live_url: string | null;
+    error: string | null;
+    campaigns?: number;
+    finished_at?: string;
+  } = {
     status: estado.status,
     step: estado.passo,
     live_url: estado.liveUrl ?? run.live_url,
