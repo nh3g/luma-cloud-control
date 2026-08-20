@@ -275,17 +275,33 @@ function numero(valor: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-function converter(saida: unknown, plataforma: string): CampanhaExterna[] {
-  let dados = saida;
-  if (typeof dados === "string") {
+/** Procura o array de campanhas em qualquer nível razoável da resposta. */
+function acharLista(valor: unknown, profundidade = 0): unknown[] | null {
+  if (valor == null || profundidade > 4) return null;
+  if (typeof valor === "string") {
+    const texto = valor.trim();
+    if (!texto.startsWith("{") && !texto.startsWith("[")) return null;
     try {
-      dados = JSON.parse(dados);
+      return acharLista(JSON.parse(texto), profundidade + 1);
     } catch {
-      return [];
+      return null;
     }
   }
-  const lista = (dados as { campaigns?: unknown[] } | null)?.campaigns;
+  if (Array.isArray(valor)) return valor;
+  if (typeof valor === "object") {
+    const objeto = valor as Record<string, unknown>;
+    for (const chave of ["campaigns", "campanhas", "data", "result", "output", "doneOutput"]) {
+      const achado = acharLista(objeto[chave], profundidade + 1);
+      if (achado) return achado;
+    }
+  }
+  return null;
+}
+
+function converter(saida: unknown, plataforma: string): CampanhaExterna[] {
+  const lista = acharLista(saida);
   if (!Array.isArray(lista)) return [];
+
   return lista.map((item, indice) => {
     const c = (item ?? {}) as Record<string, unknown>;
     const nome = String(c["name"] ?? `Campanha ${indice + 1}`);
