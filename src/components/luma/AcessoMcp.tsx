@@ -106,7 +106,7 @@ export function AcessoMcp() {
           {data?.chaves.map((c) => (
             <li key={c.id} className="flex items-center justify-between gap-3 rounded-md border border-border p-3">
               <div className="text-sm">
-                <p className="font-medium">{c.name}</p>
+                <p className="font-medium">{c.label}</p>
                 <p className="text-xs text-muted-foreground">
                   Criada em {formatarDataHora(c.created_at)} · último uso {formatarRelativo(c.last_used_at)}
                 </p>
