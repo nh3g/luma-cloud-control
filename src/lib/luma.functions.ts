@@ -594,7 +594,7 @@ export const conversarEstrategista = createServerFn({ method: "POST" })
     return conversar(context.supabase, ws, data.historico, data.modo, {
       demo: workspace?.demo_mode !== false,
       parado: workspace?.agent_stopped === true,
-      modelo: workspace?.ai_model ?? undefined,
+      ...(workspace?.ai_model ? { modelo: workspace.ai_model } : {}),
     });
   });
 
