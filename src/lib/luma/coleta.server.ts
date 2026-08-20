@@ -332,6 +332,14 @@ export async function acompanharColeta(sb: Sb, ws: string, runId: string) {
       total = await gravarCampanhas(sb, ws, run.platform, "navegador", estado.campanhas);
       atualizacao["campaigns"] = total;
       if (total === 0) atualizacao["error"] = "A coleta terminou sem campanhas legíveis. Confira a conta e o período.";
+      else {
+        // Leu os números: a sessão estava logada e o perfil ficou salvo.
+        await sb
+          .from("browser_collections")
+          .update({ connected_at: new Date().toISOString() })
+          .eq("workspace_id", ws)
+          .eq("platform", run.platform);
+      }
     } catch (erro) {
       atualizacao["status"] = "FAILED";
       atualizacao["error"] = erro instanceof Error ? erro.message : "Falha ao gravar as campanhas coletadas.";
