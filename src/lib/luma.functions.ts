@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import type { Json } from "@/integrations/supabase/types";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { obterWorkspaceId } from "./luma.server";
 
@@ -319,8 +320,8 @@ export const rodarAnalise = createServerFn({ method: "POST" })
           campaign_name: p.campaign_name,
           action_type: p.action_type,
           reason: p.reason,
-          previous_value_json: p.previous_value_json,
-          proposed_value_json: p.proposed_value_json,
+          previous_value_json: p.previous_value_json as Json,
+          proposed_value_json: p.proposed_value_json as Json,
           confidence: p.confidence,
           risk_level: p.risk_level,
           status: "PENDING" as const,
@@ -387,8 +388,8 @@ export const executarDecisao = createServerFn({ method: "POST" })
         platform: decisao.platform,
         endpoint,
         method,
-        request_json: req,
-        response_json: res,
+        request_json: req as Json,
+        response_json: res as Json,
         success,
         error_message: erro ?? null,
       });
@@ -446,9 +447,9 @@ export const executarDecisao = createServerFn({ method: "POST" })
     }
 
     // 2. Aplicar a alteração
-    const alteracao: Record<string, unknown> = {};
-    if (typeof proposto["budgetDaily"] === "number") alteracao["budget_daily"] = proposto["budgetDaily"];
-    if (typeof proposto["status"] === "string") alteracao["status"] = proposto["status"];
+    const alteracao: { budget_daily?: number; status?: string } = {};
+    if (typeof proposto["budgetDaily"] === "number") alteracao.budget_daily = proposto["budgetDaily"];
+    if (typeof proposto["status"] === "string") alteracao.status = proposto["status"];
 
     if (Object.keys(alteracao).length > 0) {
       const { error } = await sb
