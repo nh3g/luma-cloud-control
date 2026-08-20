@@ -539,6 +539,51 @@ export type Database = {
           },
         ]
       }
+      integration_tokens: {
+        Row: {
+          access_token: string
+          expires_at: string | null
+          integration_id: string
+          refresh_token: string | null
+          scope: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          access_token: string
+          expires_at?: string | null
+          integration_id: string
+          refresh_token?: string | null
+          scope?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          access_token?: string
+          expires_at?: string | null
+          integration_id?: string
+          refresh_token?: string | null
+          scope?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_tokens_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: true
+            referencedRelation: "integrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_tokens_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integrations: {
         Row: {
           access_token_vault_id: string | null
@@ -781,9 +826,11 @@ export type Database = {
       workspaces: {
         Row: {
           agent_stopped: boolean
+          auto_sync_enabled: boolean
           created_at: string
           demo_mode: boolean
           id: string
+          last_auto_run_at: string | null
           name: string
           onboarding_completed: boolean
           owner_id: string
@@ -793,9 +840,11 @@ export type Database = {
         }
         Insert: {
           agent_stopped?: boolean
+          auto_sync_enabled?: boolean
           created_at?: string
           demo_mode?: boolean
           id?: string
+          last_auto_run_at?: string | null
           name?: string
           onboarding_completed?: boolean
           owner_id: string
@@ -805,9 +854,11 @@ export type Database = {
         }
         Update: {
           agent_stopped?: boolean
+          auto_sync_enabled?: boolean
           created_at?: string
           demo_mode?: boolean
           id?: string
+          last_auto_run_at?: string | null
           name?: string
           onboarding_completed?: boolean
           owner_id?: string
