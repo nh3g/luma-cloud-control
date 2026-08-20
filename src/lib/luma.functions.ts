@@ -699,6 +699,24 @@ export const salvarColetaNavegador = createServerFn({ method: "POST" })
     return salvarColeta(context.supabase, ws, data);
   });
 
+export const conectarContaNavegador = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ plataforma: plataformaColeta }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { dispararLogin } = await import("./luma/coleta.server");
+    const ws = await obterWorkspaceId(context.supabase);
+    return dispararLogin(context.supabase, ws, data.plataforma);
+  });
+
+export const desconectarContaNavegador = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ plataforma: plataformaColeta }).parse(input))
+  .handler(async ({ context, data }) => {
+    const { desconectarConta } = await import("./luma/coleta.server");
+    const ws = await obterWorkspaceId(context.supabase);
+    return desconectarConta(context.supabase, ws, data.plataforma);
+  });
+
 export const iniciarColetaNavegador = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ plataforma: plataformaColeta }).parse(input))
@@ -707,6 +725,7 @@ export const iniciarColetaNavegador = createServerFn({ method: "POST" })
     const ws = await obterWorkspaceId(context.supabase);
     return dispararColeta(context.supabase, ws, data.plataforma);
   });
+
 
 export const acompanharColetaNavegador = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

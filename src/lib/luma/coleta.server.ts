@@ -4,8 +4,22 @@
  * campanhas lidas no banco quando a coleta termina.
  */
 import type { Sb } from "../luma.server";
-import { consultarColeta, garantirPerfil, iniciarColeta, pararColeta } from "./browser.server";
+import {
+  consultarColeta,
+  excluirPerfil,
+  garantirPerfil,
+  iniciarColeta,
+  iniciarLogin,
+  pararColeta,
+} from "./browser.server";
 import { gravarCampanhas } from "./sync.server";
+
+/** Modelo do serviço de navegador (a OpenAI da estrategista não vale aqui). */
+const MODELO_NAVEGADOR = () => process.env["BROWSER_USE_MODEL"] || "browser-use-2.0";
+
+/** Tempo máximo de cada tipo de sessão, em minutos. */
+const LIMITE_MIN = { LOGIN: 10, COLLECT: 15 } as const;
+
 
 export type Plataforma = "META" | "GOOGLE_ADS";
 
@@ -104,21 +118,16 @@ async function refletirIntegracao(
   }
 }
 
-
-/** Dispara uma coleta por navegador para a plataforma escolhida. */
-export async function dispararColeta(sb: Sb, ws: string, plataforma: Plataforma) {
+/** Checagens comuns antes de abrir qualquer sessão de navegador. */
+async function prepararSessao(sb: Sb, ws: string, plataforma: Plataforma) {
   const servico = await chaveDoWorkspace(ws);
   if (!servico) {
-    throw new Error("Cadastre a chave do serviço de navegador (Browser Use) em Integrações antes de coletar.");
+    throw new Error("Cadastre a chave do serviço de navegador (Browser Use) em Integrações antes de continuar.");
   }
-  const { data: workspace } = await sb
-    .from("workspaces")
-    .select("agent_stopped, ai_model")
-    .eq("id", ws)
-    .maybeSingle();
+  const { data: workspace } = await sb.from("workspaces").select("agent_stopped").eq("id", ws).maybeSingle();
   if (workspace?.agent_stopped) {
     throw new Error(
-      'O agente está parado. Clique em "PARAR AGENTE" no topo da tela para reativá-lo e tente coletar de novo.',
+      'O agente está parado. Clique em "PARAR AGENTE" no topo da tela para reativá-lo e tente de novo.',
     );
   }
 
@@ -129,7 +138,7 @@ export async function dispararColeta(sb: Sb, ws: string, plataforma: Plataforma)
     .eq("platform", plataforma)
     .maybeSingle();
   if (!config || config.mode !== "BROWSER") {
-    throw new Error("Ative o modo navegador para esta plataforma antes de coletar.");
+    throw new Error('Escolha a origem "Navegador na nuvem" para esta plataforma antes de continuar.');
   }
 
   const { data: emCurso } = await sb
@@ -139,34 +148,100 @@ export async function dispararColeta(sb: Sb, ws: string, plataforma: Plataforma)
     .eq("platform", plataforma)
     .eq("status", "RUNNING")
     .limit(1);
-  if ((emCurso ?? []).length > 0) throw new Error("Já existe uma coleta em andamento para esta plataforma.");
+  if ((emCurso ?? []).length > 0) throw new Error("Já existe uma sessão em andamento para esta plataforma.");
 
   const perfilId = await garantirPerfil(servico.chave, config.profile_id);
   if (perfilId !== config.profile_id) {
     await sb.from("browser_collections").update({ profile_id: perfilId }).eq("id", config.id);
   }
+  return { servico, config, perfilId };
+}
 
-  const { taskId, liveUrl } = await iniciarColeta({
+/** Abre a sessão em que a pessoa entra na conta do Meta/Google. */
+export async function dispararLogin(sb: Sb, ws: string, plataforma: Plataforma) {
+  const { servico, perfilId } = await prepararSessao(sb, ws, plataforma);
+  const { taskId, sessionId, liveUrl } = await iniciarLogin({
     chave: servico.chave,
     plataforma,
-    conta: config.external_account_id ?? "",
-    dias: config.lookback_days,
     perfilId,
-    // O navegador na nuvem só aceita os modelos do próprio serviço (o modelo da
-    // estrategista é da OpenAI e não vale aqui).
-    modelo: process.env["BROWSER_USE_MODEL"] || "browser-use-2.0",
+    modelo: MODELO_NAVEGADOR(),
   });
-
   const { data: run, error } = await sb
     .from("browser_collection_runs")
-    .insert({ workspace_id: ws, platform: plataforma, task_id: taskId, live_url: liveUrl, status: "RUNNING" })
+    .insert({
+      workspace_id: ws,
+      platform: plataforma,
+      task_id: taskId,
+      session_id: sessionId,
+      live_url: liveUrl,
+      status: "RUNNING",
+      kind: "LOGIN",
+    })
     .select("*")
     .single();
   if (error) throw new Error(error.message);
   return run;
 }
 
-/** Consulta a nuvem, atualiza o registro e grava as campanhas quando concluir. */
+/** Desfaz a conexão: apaga o perfil salvo no serviço e zera o estado. */
+export async function desconectarConta(sb: Sb, ws: string, plataforma: Plataforma) {
+  const { data: config } = await sb
+    .from("browser_collections")
+    .select("id, profile_id")
+    .eq("workspace_id", ws)
+    .eq("platform", plataforma)
+    .maybeSingle();
+  if (!config) return { ok: true };
+  if (config.profile_id) {
+    const servico = await chaveDoWorkspace(ws);
+    if (servico) await excluirPerfil(servico.chave, config.profile_id);
+  }
+  await sb
+    .from("browser_collections")
+    .update({ profile_id: null, connected_at: null, session_id: null })
+    .eq("id", config.id);
+  return { ok: true };
+}
+
+/** Dispara uma coleta por navegador para a plataforma escolhida. */
+export async function dispararColeta(sb: Sb, ws: string, plataforma: Plataforma) {
+  const { servico, config, perfilId } = await prepararSessao(sb, ws, plataforma);
+  if (!config.connected_at) {
+    throw new Error('Conecte a conta primeiro: clique em "Conectar conta" e faça o login na janela ao vivo.');
+  }
+
+  const { taskId, sessionId, liveUrl } = await iniciarColeta({
+    chave: servico.chave,
+    plataforma,
+    conta: config.external_account_id ?? "",
+    dias: config.lookback_days,
+    perfilId,
+    modelo: MODELO_NAVEGADOR(),
+  });
+
+  const { data: run, error } = await sb
+    .from("browser_collection_runs")
+    .insert({
+      workspace_id: ws,
+      platform: plataforma,
+      task_id: taskId,
+      session_id: sessionId,
+      live_url: liveUrl,
+      status: "RUNNING",
+      kind: "COLLECT",
+    })
+    .select("*")
+    .single();
+  if (error) throw new Error(error.message);
+  return run;
+}
+
+
+/**
+ * Consulta a nuvem e atualiza o registro. Em sessões de login, marca a conta
+ * como conectada; em coletas, grava as campanhas lidas. Sessões que passam do
+ * tempo limite viram falha com explicação, em vez de rodar para sempre.
+ */
 export async function acompanharColeta(sb: Sb, ws: string, runId: string) {
   const { data: run } = await sb
     .from("browser_collection_runs")
@@ -177,8 +252,31 @@ export async function acompanharColeta(sb: Sb, ws: string, runId: string) {
   if (!run) throw new Error("Execução de coleta não encontrada.");
   if (run.status !== "RUNNING") return run;
 
+  const login = run.kind === "LOGIN";
   const servico = await chaveDoWorkspace(ws);
   if (!servico) throw new Error("A chave do serviço de navegador não está cadastrada.");
+
+  const minutos = (Date.now() - new Date(run.started_at).getTime()) / 60000;
+  if (minutos > (login ? LIMITE_MIN.LOGIN : LIMITE_MIN.COLLECT)) {
+    try {
+      await pararColeta(servico.chave, run.task_id);
+    } catch {
+      /* pode já ter terminado na nuvem */
+    }
+    const { data } = await sb
+      .from("browser_collection_runs")
+      .update({
+        status: "FAILED",
+        finished_at: new Date().toISOString(),
+        error: login
+          ? "O login não foi concluído a tempo. Clique em Conectar conta de novo e entre pela janela ao vivo."
+          : "A coleta passou do tempo limite. Tente de novo; se a conta pedir login, reconecte primeiro.",
+      })
+      .eq("id", run.id)
+      .select("*")
+      .single();
+    return data ?? run;
+  }
 
   let estado;
   try {
@@ -208,6 +306,26 @@ export async function acompanharColeta(sb: Sb, ws: string, runId: string) {
     error: estado.erro,
   };
 
+  if (login) {
+    if (estado.status === "FINISHED") {
+      atualizacao["finished_at"] = new Date().toISOString();
+      await sb
+        .from("browser_collections")
+        .update({ connected_at: new Date().toISOString() })
+        .eq("workspace_id", ws)
+        .eq("platform", run.platform);
+    } else if (estado.status === "FAILED" || estado.status === "STOPPED") {
+      atualizacao["finished_at"] = new Date().toISOString();
+    }
+    const { data } = await sb
+      .from("browser_collection_runs")
+      .update(atualizacao)
+      .eq("id", run.id)
+      .select("*")
+      .single();
+    return data ?? run;
+  }
+
   if (estado.status === "FINISHED") {
     let total = 0;
     try {
@@ -219,6 +337,7 @@ export async function acompanharColeta(sb: Sb, ws: string, runId: string) {
       atualizacao["error"] = erro instanceof Error ? erro.message : "Falha ao gravar as campanhas coletadas.";
     }
     atualizacao["finished_at"] = new Date().toISOString();
+
     await sb.from("sync_runs").insert({
       workspace_id: ws,
       platform: run.platform,
