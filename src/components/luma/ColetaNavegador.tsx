@@ -117,7 +117,37 @@ export function ColetaNavegador() {
       return iniciar({ data: { plataforma: p } });
     },
     onSuccess: () => {
-      toast.success("Coleta iniciada. Acompanhe a sessão ao vivo para entrar na conta, se for pedido.");
+      toast.success("Coleta iniciada. Acompanhe a janela ao vivo abaixo.");
+      invalidar();
+    },
+    onError: (erro: Error) => toast.error(erro.message),
+  });
+
+  // Salva a configuração e abre a sessão em que a pessoa entra na conta.
+  const mConectar = useMutation({
+    mutationFn: async (p: Plataforma) => {
+      const atual = valor(p);
+      await salvar({
+        data: {
+          plataforma: p,
+          modo: atual.modo as "DEMO" | "API" | "BROWSER" | "IMPORT",
+          conta: atual.conta,
+          dias: atual.dias as 7 | 14 | 30,
+        },
+      });
+      return conectar({ data: { plataforma: p } });
+    },
+    onSuccess: () => {
+      toast.success("Janela aberta: faça o login da sua conta na sessão ao vivo abaixo.");
+      invalidar();
+    },
+    onError: (erro: Error) => toast.error(erro.message),
+  });
+
+  const mDesconectar = useMutation({
+    mutationFn: (p: Plataforma) => desconectar({ data: { plataforma: p } }),
+    onSuccess: () => {
+      toast.success("Conta desconectada do navegador.");
       invalidar();
     },
     onError: (erro: Error) => toast.error(erro.message),
@@ -126,11 +156,12 @@ export function ColetaNavegador() {
   const mParar = useMutation({
     mutationFn: (id: string) => parar({ data: { id } }),
     onSuccess: () => {
-      toast.success("Coleta interrompida.");
+      toast.success("Sessão interrompida.");
       invalidar();
     },
     onError: (erro: Error) => toast.error(erro.message),
   });
+
 
 
   const emAndamento = (data?.execucoes ?? []).filter((e) => e.status === "RUNNING");
