@@ -174,6 +174,23 @@ function Pagina() {
         </div>
       ) : null}
 
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-3 text-sm">
+        <span className="flex items-center gap-1.5">
+          <Clock className="size-4 text-muted-foreground" />
+          <strong>{listas.PENDING.length}</strong> aguardando você
+        </span>
+        <span className="text-muted-foreground">·</span>
+        <span className={vencendoEmBreve > 0 ? "text-warning" : "text-muted-foreground"}>
+          <strong>{vencendoEmBreve}</strong> vence(m) na próxima hora
+        </span>
+        <span className="text-muted-foreground">·</span>
+        <span className="text-muted-foreground">
+          <strong>{listas.EXPIRED.length}</strong> já expirou(aram) sem resposta
+        </span>
+      </div>
+
+
+
       <Tabs value={aba} onValueChange={setAba}>
         <TabsList>
           <TabsTrigger value="PENDING">Pendentes ({listas.PENDING.length})</TabsTrigger>
