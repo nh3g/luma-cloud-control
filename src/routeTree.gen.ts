@@ -20,6 +20,7 @@ import { Route as AuthenticatedDiagnosticoRouteImport } from './routes/_authenti
 import { Route as AuthenticatedEstrategistaRouteImport } from './routes/_authenticated/estrategista'
 import { Route as AuthenticatedIntegracoesRouteImport } from './routes/_authenticated/integracoes'
 import { Route as AuthenticatedNotasRouteImport } from './routes/_authenticated/notas'
+import { Route as ApiPublicMcpRouteImport } from './routes/api/public/mcp'
 import { Route as ApiPublicCompanionRpcRouteImport } from './routes/api/public/companion/rpc'
 import { Route as ApiPublicCronExecutarRouteImport } from './routes/api/public/cron/executar'
 import { Route as ApiPublicOauthCallbackRouteImport } from './routes/api/public/oauth/callback'
@@ -83,6 +84,11 @@ const AuthenticatedNotasRoute = AuthenticatedNotasRouteImport.update({
   path: '/notas',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicMcpRoute = ApiPublicMcpRouteImport.update({
+  id: '/api/public/mcp',
+  path: '/api/public/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicCompanionRpcRoute = ApiPublicCompanionRpcRouteImport.update({
   id: '/api/public/companion/rpc',
   path: '/api/public/companion/rpc',
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/estrategista': typeof AuthenticatedEstrategistaRoute
   '/integracoes': typeof AuthenticatedIntegracoesRoute
   '/notas': typeof AuthenticatedNotasRoute
+  '/api/public/mcp': typeof ApiPublicMcpRoute
   '/api/public/companion/rpc': typeof ApiPublicCompanionRpcRoute
   '/api/public/cron/executar': typeof ApiPublicCronExecutarRoute
   '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/integracoes': typeof AuthenticatedIntegracoesRoute
   '/notas': typeof AuthenticatedNotasRoute
   '/': typeof AuthenticatedIndexRoute
+  '/api/public/mcp': typeof ApiPublicMcpRoute
   '/api/public/companion/rpc': typeof ApiPublicCompanionRpcRoute
   '/api/public/cron/executar': typeof ApiPublicCronExecutarRoute
   '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/_authenticated/integracoes': typeof AuthenticatedIntegracoesRoute
   '/_authenticated/notas': typeof AuthenticatedNotasRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/api/public/mcp': typeof ApiPublicMcpRoute
   '/api/public/companion/rpc': typeof ApiPublicCompanionRpcRoute
   '/api/public/cron/executar': typeof ApiPublicCronExecutarRoute
   '/api/public/oauth/callback': typeof ApiPublicOauthCallbackRoute
@@ -159,6 +168,7 @@ export interface FileRouteTypes {
     | '/estrategista'
     | '/integracoes'
     | '/notas'
+    | '/api/public/mcp'
     | '/api/public/companion/rpc'
     | '/api/public/cron/executar'
     | '/api/public/oauth/callback'
@@ -174,6 +184,7 @@ export interface FileRouteTypes {
     | '/integracoes'
     | '/notas'
     | '/'
+    | '/api/public/mcp'
     | '/api/public/companion/rpc'
     | '/api/public/cron/executar'
     | '/api/public/oauth/callback'
@@ -190,6 +201,7 @@ export interface FileRouteTypes {
     | '/_authenticated/integracoes'
     | '/_authenticated/notas'
     | '/_authenticated/'
+    | '/api/public/mcp'
     | '/api/public/companion/rpc'
     | '/api/public/cron/executar'
     | '/api/public/oauth/callback'
@@ -198,6 +210,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicMcpRoute: typeof ApiPublicMcpRoute
   ApiPublicCompanionRpcRoute: typeof ApiPublicCompanionRpcRoute
   ApiPublicCronExecutarRoute: typeof ApiPublicCronExecutarRoute
   ApiPublicOauthCallbackRoute: typeof ApiPublicOauthCallbackRoute
@@ -282,6 +295,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNotasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/mcp': {
+      id: '/api/public/mcp'
+      path: '/api/public/mcp'
+      fullPath: '/api/public/mcp'
+      preLoaderRoute: typeof ApiPublicMcpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/companion/rpc': {
       id: '/api/public/companion/rpc'
       path: '/api/public/companion/rpc'
@@ -336,6 +356,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicMcpRoute: ApiPublicMcpRoute,
   ApiPublicCompanionRpcRoute: ApiPublicCompanionRpcRoute,
   ApiPublicCronExecutarRoute: ApiPublicCronExecutarRoute,
   ApiPublicOauthCallbackRoute: ApiPublicOauthCallbackRoute,
