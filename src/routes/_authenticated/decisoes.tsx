@@ -2,15 +2,16 @@ import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Clock, Loader2, X } from "lucide-react";
+import { Check, Clock, Loader2, Play, RefreshCw, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { decidirDecisao, listarDecisoes } from "@/lib/luma.functions";
+import { decidirDecisao, executarDecisao, listarDecisoes, rodarAnalise } from "@/lib/luma.functions";
 import { useWorkspace } from "@/hooks/useWorkspace";
 import {
   formatarDataHora,
   formatarRelativo,
   rotuloAcao,
+  rotuloCanal,
   rotuloOrigem,
   rotuloPlataforma,
   rotuloRisco,
@@ -90,6 +91,35 @@ function Pagina() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const analisar = useServerFn(rodarAnalise);
+  const analise = useMutation({
+    mutationFn: () => analisar(),
+    onSuccess: (r) => {
+      const partes = [`${r.analisadas} campanhas analisadas`, `${r.criadas} nova(s) decisão(ões)`];
+      if (r.ignoradas > 0) partes.push(`${r.ignoradas} duplicada(s) ignorada(s)`);
+      if (r.expiradas > 0) partes.push(`${r.expiradas} expirada(s)`);
+      toast.success(partes.join(" · "));
+      void queryClient.invalidateQueries({ queryKey: ["decisoes"] });
+      void queryClient.invalidateQueries({ queryKey: ["visao-geral"] });
+      void queryClient.invalidateQueries({ queryKey: ["diagnostico"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const executar = useServerFn(executarDecisao);
+  const execucao = useMutation({
+    mutationFn: (vars: { id: string }) => executar({ data: vars }),
+    onSuccess: (r) => {
+      if (r.ok) toast.success("Decisão executada e verificada.");
+      else toast.error(r.motivo ?? "Execução bloqueada.");
+      void queryClient.invalidateQueries({ queryKey: ["decisoes"] });
+      void queryClient.invalidateQueries({ queryKey: ["campanhas"] });
+      void queryClient.invalidateQueries({ queryKey: ["visao-geral"] });
+      void queryClient.invalidateQueries({ queryKey: ["diagnostico"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const agenteParado = workspace?.agent_stopped ?? false;
 
   const listas = useMemo(() => {
@@ -110,12 +140,26 @@ function Pagina() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">Decisões</h1>
-        <p className="text-sm text-muted-foreground">
-          Nada é executado sem sua aprovação. Cada aprovação vale uma única vez e expira no prazo
-          definido nas configurações.
-        </p>
+      <header className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Decisões</h1>
+          <p className="text-sm text-muted-foreground">
+            Nada é executado sem sua aprovação. Cada aprovação vale uma única vez e expira no prazo
+            definido nas configurações.
+          </p>
+        </div>
+        <Button
+          onClick={() => analise.mutate()}
+          disabled={agenteParado || analise.isPending}
+          className="shrink-0"
+        >
+          {analise.isPending ? (
+            <Loader2 className="mr-1 size-4 animate-spin" />
+          ) : (
+            <RefreshCw className="mr-1 size-4" />
+          )}
+          Rodar análise agora
+        </Button>
       </header>
 
       {agenteParado ? (
@@ -150,6 +194,8 @@ function Pagina() {
             const restante = tempoRestante(d.expires_at);
             const pendente = d.status === "PENDING" && restante !== null;
             const valores = descreverValores(d.previous_value_json, d.proposed_value_json);
+            const resultado = (d.result_json ?? null) as { blocked?: boolean; reason?: string } | null;
+            const bloqueio = resultado?.blocked ? (resultado.reason ?? "divergência detectada") : null;
             return (
               <Card key={d.id}>
                 <CardContent className="flex flex-col gap-4 p-4 md:flex-row md:items-center md:justify-between">
@@ -174,6 +220,15 @@ function Pagina() {
                     <p className="text-sm">{d.reason}</p>
                     {valores ? (
                       <p className="text-xs text-muted-foreground">Alteração: {valores}</p>
+                    ) : null}
+                    {bloqueio ? (
+                      <p className="text-xs text-destructive">Execução bloqueada: {bloqueio}</p>
+                    ) : null}
+                    {d.status === "EXECUTED" ? (
+                      <p className="text-xs text-primary">
+                        Executada e verificada em {formatarDataHora(d.executed_at)} ·{" "}
+                        {rotuloCanal[d.executed_via ?? ""] ?? "—"}
+                      </p>
                     ) : null}
                     <p className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="size-3" />
@@ -201,6 +256,22 @@ function Pagina() {
                       >
                         <X className="mr-1 size-4" /> Recusar
                       </Button>
+                    </div>
+                  ) : d.status === "APPROVED" && restante !== null ? (
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <Button
+                        size="sm"
+                        disabled={agenteParado || execucao.isPending}
+                        onClick={() => execucao.mutate({ id: d.id })}
+                      >
+                        {execucao.isPending ? (
+                          <Loader2 className="mr-1 size-4 animate-spin" />
+                        ) : (
+                          <Play className="mr-1 size-4" />
+                        )}
+                        Executar
+                      </Button>
+                      <span className="text-xs text-muted-foreground">{restante}</span>
                     </div>
                   ) : (
                     <p className="shrink-0 text-xs text-muted-foreground">

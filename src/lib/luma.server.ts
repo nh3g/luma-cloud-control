@@ -11,3 +11,17 @@ export async function obterWorkspaceId(supabase: Sb): Promise<string> {
   if (!data) throw new Error("Workspace não encontrado para este usuário.");
   return data.id;
 }
+
+/** Marca como expiradas as decisões pendentes ou aprovadas cuja validade passou. */
+export async function expirarDecisoesVencidas(supabase: Sb, workspaceId: string): Promise<number> {
+  const agora = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("decisions")
+    .update({ status: "EXPIRED" })
+    .eq("workspace_id", workspaceId)
+    .in("status", ["PENDING", "APPROVED"])
+    .lt("expires_at", agora)
+    .select("id");
+  if (error) throw new Error(error.message);
+  return data?.length ?? 0;
+}
