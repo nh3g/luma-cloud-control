@@ -304,7 +304,7 @@ function Metrica({
 }: {
   titulo: string;
   valor: string;
-  destaque?: "positivo" | "negativo";
+  destaque?: "positivo" | "negativo" | undefined;
 }) {
   return (
     <Card>
